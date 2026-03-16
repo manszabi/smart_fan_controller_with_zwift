@@ -1,0 +1,133 @@
+{
+  // ============================================================
+  // GLOBÁLIS BEÁLLÍTÁSOK
+  // ============================================================
+
+  // Cooldown idő másodpercben zóna csökkentésnél (0–300).
+  // Zóna emelkedésnél azonnali váltás történik, cooldown nélkül.
+  // Adaptív módosítások: nagy esés (>=2 szint) → felezés, emelkedés → duplázás.
+  "cooldown_seconds": 120,
+
+  // Globális fallback buffer beállítások (ha a forrás-specifikus nincs megadva).
+  "buffer_seconds": 3,         // Gördülő átlag ablak mérete (1–10 mp)
+  "minimum_samples": 6,        // Minimum minta érvényes átlaghoz (1–1000)
+  "buffer_rate_hz": 4,         // Várt mintavételi frekvencia Hz-ben (1–60)
+  "dropout_timeout": 5,        // Adatforrás kiesés timeout (1–120 mp)
+
+  // Ha true, 0W detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
+  "zero_power_immediate": false,
+
+  // ============================================================
+  // TELJESÍTMÉNY ZÓNA HATÁROK
+  // ============================================================
+  "zone_thresholds": {
+    "ftp": 200,                // Funkcionális küszöbteljesítmény wattban (100–500)
+    "min_watt": 0,             // Minimális érvényes pozitív watt (0–9999)
+    "max_watt": 1000,          // Maximális érvényes watt (1–100000)
+    "z1_max_percent": 60,      // Z1 felső határ az FTP %-ában (1–100)
+    "z2_max_percent": 89       // Z2 felső határ az FTP %-ában (1–100)
+    // Zóna kiosztás:
+    //   Z0: 0W (ventilátor kikapcsolva)
+    //   Z1: 1W – FTP×z1_max_percent%
+    //   Z2: FTP×z1_max_percent%+1 – FTP×z2_max_percent%
+    //   Z3: FTP×z2_max_percent%+1 – max_watt
+  },
+
+  // ============================================================
+  // BLE VENTILÁTOR KIMENET (ESP32 vezérlő)
+  // ============================================================
+  "ble": {
+    // Az ESP32 BLE eszköz neve. null vagy "" → auto-discovery (service UUID alapján).
+    "device_name": null,
+    "scan_timeout": 10,            // BLE keresés timeout (1–60 mp)
+    "connection_timeout": 15,      // Csatlakozási timeout (1–60 mp)
+    "reconnect_interval": 5,       // Újracsatlakozási várakozás (1–60 mp)
+    "max_retries": 10,             // Max újrapróbálkozások (1–100), utána 30s cooldown
+    "command_timeout": 3,          // GATT write timeout (1–30 mp)
+    "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+    "characteristic_uuid": "0000ffe1-0000-1000-8000-00805f9b34fb",
+    // Alkalmazás szintű PIN kód. null → nincs autentikáció.
+    // Megadható int-ként (123456) vagy string-ként ("012345" ha vezető nulla kell).
+    "pin_code": null
+  },
+
+  // ============================================================
+  // ADATFORRÁS BEÁLLÍTÁSOK
+  // ============================================================
+  "datasource": {
+    // Adatforrás kiválasztása: "antplus", "ble", "zwiftudp"
+    "power_source": "antplus",
+    "hr_source": "antplus",
+
+    // --- Forrás-specifikus buffer beállítások ---
+    // Ha nincs megadva, a globális fallback értékek érvényesek.
+    "BLE_buffer_seconds": 3,
+    "BLE_minimum_samples": 6,
+    "BLE_buffer_rate_hz": 4,
+    "BLE_dropout_timeout": 5,
+
+    "ANT_buffer_seconds": 3,
+    "ANT_minimum_samples": 6,
+    "ANT_buffer_rate_hz": 4,
+    "ANT_dropout_timeout": 5,
+
+    "zwiftUDP_buffer_seconds": 10,
+    "zwiftUDP_minimum_samples": 2,
+    "zwiftUDP_buffer_rate_hz": 4,
+    "zwiftUDP_dropout_timeout": 15,
+
+    // --- ANT+ eszköz beállítások ---
+    // Device ID: 0 = wildcard (első elérhető eszköz), 1–65535 = specifikus eszköz.
+    // A talált eszközök az ant_devices.log fájlba kerülnek.
+    "ant_power_device_id": 0,
+    "ant_hr_device_id": 0,
+    "ant_power_reconnect_interval": 5,   // USB dongle kihúzás utáni újrapróba (1–60 mp)
+    "ant_power_max_retries": 10,         // Max újrapróba (1–100), utána 30s cooldown
+    "ant_hr_reconnect_interval": 5,
+    "ant_hr_max_retries": 10,
+
+    // --- BLE szenzor bemeneti beállítások ---
+    // device_name: null vagy "" → auto-discovery (service UUID alapján).
+    // A talált eszközök a ble_devices.log fájlba kerülnek.
+    "ble_power_device_name": null,
+    "ble_power_scan_timeout": 10,        // BLE keresés timeout (1–60 mp)
+    "ble_power_reconnect_interval": 5,   // Újracsatlakozás (1–60 mp)
+    "ble_power_max_retries": 10,         // Max újrapróba (1–100), utána 30s cooldown
+
+    "ble_hr_device_name": null,
+    "ble_hr_scan_timeout": 10,
+    "ble_hr_reconnect_interval": 5,
+    "ble_hr_max_retries": 10,
+
+    // --- Zwift UDP beállítások ---
+    "zwift_udp_port": 7878,
+    "zwift_udp_host": "127.0.0.1"
+  },
+
+  // ============================================================
+  // SZÍVFREKVENCIA ZÓNÁK
+  // ============================================================
+  "heart_rate_zones": {
+    // Ha false, a HR adatok csak megjelennek de nem befolyásolják a ventilátort.
+    "enabled": false,
+    "max_hr": 185,             // Maximális szívfrekvencia (100–220 bpm)
+    "resting_hr": 60,          // Pihenő szívfrekvencia (30–100 bpm)
+
+    // Zóna mód:
+    //   "power_only"  – csak a teljesítmény zóna dönt
+    //   "hr_only"     – csak a HR zóna dönt
+    //   "higher_wins" – a kettő közül a magasabb zóna érvényesül
+    "zone_mode": "power_only",
+
+    "z1_max_percent": 70,      // Z1 felső határ a max_hr %-ában (1–100)
+    "z2_max_percent": 80,      // Z2 felső határ a max_hr %-ában (1–100)
+    // Zóna kiosztás:
+    //   Z0: resting_hr alatt
+    //   Z1: resting_hr – max_hr×z1_max_percent%
+    //   Z2: max_hr×z1_max_percent%+1 – max_hr×z2_max_percent%
+    //   Z3: max_hr×z2_max_percent% felett
+
+    "valid_min_hr": 30,        // Érvényes HR alsó határ szűréshez (30–100 bpm)
+    "valid_max_hr": 220        // Érvényes HR felső határ szűréshez (150–300 bpm)
+  }
+}

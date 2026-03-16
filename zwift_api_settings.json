@@ -1,0 +1,7 @@
+{
+  "username": "123456789",
+  "password": "123456789",
+  "broadcast_host": "127.0.0.1",
+  "broadcast_port": 7878,
+  "poll_interval": 3.0
+}
