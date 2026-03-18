@@ -1607,6 +1607,7 @@ class BLEFanOutputController:
                     logger.error(
                         f"BLE AUTH sikertelen: {resp} - ellenorizd a pin_code erteket!"
                     )
+                    print(f"✗ BLE PIN hiba ({resp}): helytelen pin_code! Javítsd a settings.json-ban.")
                     self._auth_failed = True
                     try:
                         await client.disconnect()
@@ -4006,11 +4007,12 @@ class HUDWindow:
 
             # BLE fan
             if ble_fan is not None:
-                connected = ble_fan.is_connected
-                self._lbl_ble.config(
-                    text="ONLINE" if connected else "OFFLINE",
-                    fg=self.LCARS_CYAN if connected else self.LCARS_RED,
-                )
+                if ble_fan._auth_failed:
+                    self._lbl_ble.config(text="PIN FAIL", fg=self.LCARS_GOLD)
+                elif ble_fan.is_connected:
+                    self._lbl_ble.config(text="ONLINE", fg=self.LCARS_CYAN)
+                else:
+                    self._lbl_ble.config(text="OFFLINE", fg=self.LCARS_RED)
             else:
                 self._lbl_ble.config(text="DISABLED", fg=self.TEXT_DIM)
 
