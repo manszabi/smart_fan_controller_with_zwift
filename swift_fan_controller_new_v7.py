@@ -4146,6 +4146,10 @@ class HUDWindow:
 
 
 def main() -> None:
+    # Windows: SelectorEventLoop megbízhatóbb threaded asyncio-hoz
+    if _platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     # Fix #27: logging basicConfig – handler nélkül a logger.info/warning láthatatlan
     logging.basicConfig(
         level=logging.WARNING,
