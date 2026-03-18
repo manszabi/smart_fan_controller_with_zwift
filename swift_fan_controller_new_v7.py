@@ -4150,7 +4150,8 @@ class HUDWindow:
 
 def main() -> None:
     # Windows: SelectorEventLoop megbízhatóbb threaded asyncio-hoz
-    if _platform.system() == "Windows":
+    # Python 3.16-tól ezek az API-k eltávolításra kerülnek
+    if _platform.system() == "Windows" and sys.version_info < (3, 14):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     # Fix #27: logging basicConfig – handler nélkül a logger.info/warning láthatatlan
