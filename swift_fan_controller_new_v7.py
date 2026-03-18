@@ -3533,6 +3533,19 @@ class HUDWindow:
         )
         self._lbl_zone.pack(fill=tk.X, padx=8, pady=(0, 6))
 
+        # ───────── ÁLLAPOT CSÍK (state tiles) ─────────
+        tile_frame = tk.Frame(content, bg=self.PANEL_BG)
+        tile_frame.pack(fill=tk.X, padx=6, pady=(0, 4))
+        tile_frame.bind("<ButtonPress-1>", self._on_drag_start)
+        tile_frame.bind("<B1-Motion>", self._on_drag_move)
+
+        self._tile_zero_imm     = self._make_tile(tile_frame, "AZONNALI 0")
+        self._tile_higher_wins  = self._make_tile(tile_frame, "HIGHER WINS")
+        self._tile_ant          = self._make_tile(tile_frame, "ANT HR/PWR")
+        self._tile_ble          = self._make_tile(tile_frame, "BLE HR/PWR")
+        self._tile_cooldown     = self._make_tile(tile_frame, "COOLDOWN")
+        self._tile_frame        = tile_frame
+
         # ───────── TELEMETRIA SOROK (színes LCARS háttérrel) ─────────
         self._lbl_power = self._make_row(
             content, "POWER", "– – –", self.LCARS_GOLD, label_bg=self.LCARS_TAN)
@@ -3858,6 +3871,22 @@ class HUDWindow:
             w.bind("<B1-Motion>", self._on_drag_move)
         return val_lbl
 
+    def _make_tile(self, parent: tk.Frame, text: str) -> tk.Label:
+        """Állapot csík – egy színes téglaszerű kis Label."""
+        lbl = tk.Label(
+            parent,
+            text=text,
+            fg="#000a14",
+            bg=self.TEXT_DIM,
+            font=(self._font_family, 7, "bold"),
+            padx=5, pady=2,
+            anchor="center",
+        )
+        lbl.pack(side=tk.LEFT, padx=(0, 2), pady=0)
+        lbl.bind("<ButtonPress-1>", self._on_drag_start)
+        lbl.bind("<B1-Motion>", self._on_drag_move)
+        return lbl
+
     def _make_status_row(self, parent: tk.Frame, label: str, value: str,
                          label_bg: str | None = None) -> tk.Label:
         """Státusz sor LCARS színes label háttérrel."""
@@ -4081,6 +4110,35 @@ class HUDWindow:
             else:
                 self._lbl_cool.config(text="– – –", fg=self.TEXT_DIM)
 
+            # ── Állapot csík frissítése ──
+            # zero_power_immediate
+            zpi = self._ctrl.settings.get("zero_power_immediate", False)
+            self._tile_zero_imm.config(bg=self.LCARS_CYAN if zpi else self.TEXT_DIM)
+
+            # higher_wins
+            zone_mode_val = self._ctrl.settings["heart_rate_zones"].get(
+                "zone_mode", ZoneMode.POWER_ONLY
+            )
+            hw = (zone_mode_val == ZoneMode.HIGHER_WINS)
+            self._tile_higher_wins.config(bg=self.LCARS_ORANGE if hw else self.TEXT_DIM)
+
+            # ANT HR/PWR
+            self._tile_ant.config(
+                bg=self.LCARS_PURPLE if (power_ant or hr_ant) else self.TEXT_DIM
+            )
+
+            # BLE HR/PWR
+            self._tile_ble.config(
+                bg=self.LCARS_BLUE if (power_ble or hr_ble) else self.TEXT_DIM
+            )
+
+            # Cooldown tile
+            if cool is not None:
+                cd_active, _ = cool.snapshot()
+                self._tile_cooldown.config(bg=self.LCARS_GOLD if cd_active else self.TEXT_DIM)
+            else:
+                self._tile_cooldown.config(bg=self.TEXT_DIM)
+
         except Exception as exc:
             logger.warning(f"HUD _update hiba: {exc}")
         finally:
@@ -4116,6 +4174,14 @@ class HUDWindow:
         status_key_size = max(7, int(9 * s))
         for lbl in self._status_key_labels:
             lbl.config(font=(ff, status_key_size, "bold"))
+
+        # ── Állapot csík (tile-ok) ──
+        tile_size = max(6, int(7 * s))
+        for tile in (
+            self._tile_zero_imm, self._tile_higher_wins,
+            self._tile_ant, self._tile_ble, self._tile_cooldown,
+        ):
+            tile.config(font=(ff, tile_size, "bold"))
 
         # ── Opacity slider + label ──
         self._alpha_slider.config(length=max(80, int(160 * s)), width=max(10, int(14 * s)))
