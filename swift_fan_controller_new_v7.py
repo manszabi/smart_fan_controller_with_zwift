@@ -3539,11 +3539,11 @@ class HUDWindow:
         tile_frame.bind("<ButtonPress-1>", self._on_drag_start)
         tile_frame.bind("<B1-Motion>", self._on_drag_move)
 
-        self._tile_zero_imm     = self._make_tile(tile_frame, "AZONNALI 0")
-        self._tile_higher_wins  = self._make_tile(tile_frame, "HIGHER WINS")
-        self._tile_ant          = self._make_tile(tile_frame, "ANT HR/PWR")
-        self._tile_ble          = self._make_tile(tile_frame, "BLE HR/PWR")
-        self._tile_cooldown     = self._make_tile(tile_frame, "COOLDOWN")
+        self._tile_zero_imm     = self._make_tile(tile_frame, "ZRO IMM")
+        self._tile_higher_wins  = self._make_tile(tile_frame, "HI WINS")
+        self._tile_ant          = self._make_tile(tile_frame, "ANT+")
+        self._tile_ble          = self._make_tile(tile_frame, "BLE")
+        self._tile_cooldown     = self._make_tile(tile_frame, "COOL")
         self._tile_frame        = tile_frame
 
         # ───────── TELEMETRIA SOROK (színes LCARS háttérrel) ─────────
