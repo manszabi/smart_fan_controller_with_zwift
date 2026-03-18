@@ -48,8 +48,16 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-echo.
 echo [OK] Fuggosegek telepitve
+
+echo.
+echo PyInstaller telepitese (exe buildhez)...
+pip install pyinstaller >nul 2>&1
+if errorlevel 1 (
+    echo [FIGYELEM] PyInstaller telepitese sikertelen - exe build nem lesz elerheto
+) else (
+    echo [OK] PyInstaller telepitve
+)
 
 :: Check for settings.json
 if not exist "settings.json" (
@@ -71,6 +79,7 @@ echo ========================================
 echo  Telepites kesz!
 echo ========================================
 echo.
-echo Inditas: run.bat
+echo Inditas:        run.bat
+echo EXE buildelese: build_exe.bat
 echo.
 pause

@@ -3221,9 +3221,15 @@ class FanController:
         if needs_zwift:
             # Subprocess indítása – platform-specifikus kezelés
             try:
-                monitor_script = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), "zwift_api_polling.py"
-                )
+                if getattr(sys, 'frozen', False):
+                    # PyInstaller frozen exe: zwift_api_polling.exe az exe mellett
+                    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+                    cmd = [os.path.join(exe_dir, "zwift_api_polling.exe")]
+                else:
+                    monitor_script = os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)), "zwift_api_polling.py"
+                    )
+                    cmd = [sys.executable, monitor_script]
 
                 if _platform.system() == "Windows":
                     startupinfo = subprocess.STARTUPINFO()
@@ -3243,10 +3249,7 @@ class FanController:
                 else:
                     popen_kwargs["close_fds"] = True
 
-                self._zwift_proc = subprocess.Popen(
-                    [sys.executable, monitor_script],
-                    **popen_kwargs,
-                )
+                self._zwift_proc = subprocess.Popen(cmd, **popen_kwargs)
 
                 msg = f"zwift_api_polling.py elindítva (PID: {self._zwift_proc.pid})"
                 logger.info(msg)
@@ -4160,7 +4163,13 @@ def main() -> None:
     logging.getLogger("bleak").setLevel(logging.CRITICAL)
     logging.getLogger("openant").setLevel(logging.CRITICAL)
 
-    controller = FanController("settings.json")
+    # PyInstaller frozen exe: settings.json az exe mellett keresendő
+    if getattr(sys, 'frozen', False):
+        _exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        _settings_path = os.path.join(_exe_dir, "settings.json")
+    else:
+        _settings_path = "settings.json"
+    controller = FanController(_settings_path)
     controller.print_startup_info()
 
     loop = asyncio.new_event_loop()
