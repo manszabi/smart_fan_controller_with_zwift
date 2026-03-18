@@ -36,8 +36,12 @@ BROADCAST_HOST = "127.0.0.1"
 BROADCAST_PORT = 7878
 DEFAULT_POLL_INTERVAL = 5.0  # seconds
 
-# Settings file – resolved relative to this script's directory
-SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zwift_api_settings.json")
+# Settings file – resolved relative to the exe (frozen) or script directory
+if getattr(sys, 'frozen', False):
+    _BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SETTINGS_FILE = os.path.join(_BASE_DIR, "zwift_api_settings.json")
 
 ZWIFT_AUTH_URL = (
     "https://secure.zwift.com/auth/realms/zwift/protocol/openid-connect/token"
