@@ -75,9 +75,9 @@ Röviden a `settings.json` fő szekciói:
 |---------|----------|
 | `global_settings` | cooldown, buffer, dropout timeout |
 | `power_zones` | FTP, watt tartomány, zóna százalékok, 0W azonnali leállás |
+| `heart_rate_zones` | HR zónák, zone_mode (power_only/hr_only/higher_wins) |
 | `ble` | ESP32 ventilátor vezérlő (kimenet) |
 | `datasource` | Adatforrás kiválasztás, ANT+/BLE/Zwift specifikus beállítások |
-| `heart_rate_zones` | HR zónák, zone_mode (power_only/hr_only/higher_wins) |
 
 Kommentezett referencia: `settings.example.jsonc`
 
