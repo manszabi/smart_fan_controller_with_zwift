@@ -31,7 +31,37 @@
     //   Z3: FTP×z2_max_percent%+1 – max_watt
 
     // Ha true, 0W detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
-    "zero_power_immediate": false
+    "zero_power_immediate": false,
+
+    // ============================================================
+    // SZÍVFREKVENCIA ZÓNÁK
+    // ============================================================
+    "heart_rate_zones": {
+      // Ha false, a HR adatok csak megjelennek de nem befolyásolják a ventilátort.
+      "enabled": false,
+      "max_hr": 185,             // Maximális szívfrekvencia (100–220 bpm)
+      "resting_hr": 60,          // Pihenő szívfrekvencia (30–100 bpm)
+
+      // Zóna mód:
+      //   "power_only"  – csak a teljesítmény zóna dönt
+      //   "hr_only"     – csak a HR zóna dönt
+      //   "higher_wins" – a kettő közül a magasabb zóna érvényesül
+      "zone_mode": "power_only",
+
+      "z1_max_percent": 70,      // Z1 felső határ a max_hr %-ában (1–100)
+      "z2_max_percent": 80,      // Z2 felső határ a max_hr %-ában (1–100)
+      // Zóna kiosztás:
+      //   Z0: resting_hr alatt
+      //   Z1: resting_hr – max_hr×z1_max_percent%
+      //   Z2: max_hr×z1_max_percent%+1 – max_hr×z2_max_percent%
+      //   Z3: max_hr×z2_max_percent% felett
+
+      "valid_min_hr": 30,        // Érvényes HR alsó határ szűréshez (30–100 bpm)
+      "valid_max_hr": 220,       // Érvényes HR felső határ szűréshez (150–300 bpm)
+
+      // Ha true, 0 HR zóna detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
+      "zero_hr_immediate": false
+    }
   },
 
   // ============================================================
@@ -105,33 +135,4 @@
     "zwift_udp_host": "127.0.0.1"
   },
 
-  // ============================================================
-  // SZÍVFREKVENCIA ZÓNÁK
-  // ============================================================
-  "heart_rate_zones": {
-    // Ha false, a HR adatok csak megjelennek de nem befolyásolják a ventilátort.
-    "enabled": false,
-    "max_hr": 185,             // Maximális szívfrekvencia (100–220 bpm)
-    "resting_hr": 60,          // Pihenő szívfrekvencia (30–100 bpm)
-
-    // Zóna mód:
-    //   "power_only"  – csak a teljesítmény zóna dönt
-    //   "hr_only"     – csak a HR zóna dönt
-    //   "higher_wins" – a kettő közül a magasabb zóna érvényesül
-    "zone_mode": "power_only",
-
-    "z1_max_percent": 70,      // Z1 felső határ a max_hr %-ában (1–100)
-    "z2_max_percent": 80,      // Z2 felső határ a max_hr %-ában (1–100)
-    // Zóna kiosztás:
-    //   Z0: resting_hr alatt
-    //   Z1: resting_hr – max_hr×z1_max_percent%
-    //   Z2: max_hr×z1_max_percent%+1 – max_hr×z2_max_percent%
-    //   Z3: max_hr×z2_max_percent% felett
-
-    "valid_min_hr": 30,        // Érvényes HR alsó határ szűréshez (30–100 bpm)
-    "valid_max_hr": 220,       // Érvényes HR felső határ szűréshez (150–300 bpm)
-
-    // Ha true, 0 HR zóna detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
-    "zero_hr_immediate": false
-  }
 }
