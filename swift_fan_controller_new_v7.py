@@ -1360,10 +1360,9 @@ async def _scan_ble_with_autodiscovery(
             if isinstance(item, tuple) and len(t) == 2:
                 device = t[0]
                 adv_data: Any = t[1]
-                svc = cast(Any, adv_data)
                 uuids = (
-                    list(svc.service_uuids)
-                    if hasattr(svc, "service_uuids") and svc.service_uuids
+                    list(adv_data.service_uuids)
+                    if hasattr(adv_data, "service_uuids") and adv_data.service_uuids
                     else []
                 )
             else:
@@ -1390,7 +1389,7 @@ async def _scan_ble_with_autodiscovery(
         logger.error(f"BLE scan hiba ({scan_context}): {exc}")
         return None, []
 
-    matched_addr: Optional[str] = getattr(cast(Any, matched), "address", None) if matched else None
+    matched_addr: Optional[str] = getattr(matched, "address", None) if matched else None
     _print_ble_devices(devices_info, scan_context, matched_addr)
     _log_ble_devices_to_file(devices_info, scan_context)
 
