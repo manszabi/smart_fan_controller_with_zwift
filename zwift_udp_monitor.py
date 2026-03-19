@@ -10,6 +10,7 @@ Requires the Zwift Companion App running on the same Wi-Fi network.
 
 from __future__ import annotations
 
+from collections.abc import Generator
 import argparse
 import json
 import os
@@ -18,6 +19,7 @@ import struct
 import sys
 import threading
 import time
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -30,7 +32,7 @@ SETTINGS_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "zwift_udp_monitor_setting.json"
 )
 
-_DEFAULT_SETTINGS: dict = {
+_DEFAULT_SETTINGS: dict[str, Any] = {
     "zca_udp_port": 21587,
     "broadcast_host": "127.0.0.1",
     "broadcast_port": 7878,
@@ -40,7 +42,7 @@ _DEFAULT_SETTINGS: dict = {
 }
 
 
-def load_settings(path: str) -> dict:
+def load_settings(path: str) -> dict[str, Any]:
     """Load settings from a JSON file, validating every field.
 
     If the file does not exist or contains invalid JSON the file is (re)created
@@ -49,16 +51,16 @@ def load_settings(path: str) -> dict:
     the corrected settings are then written back to disk.
     """
 
-    def _valid_port(val) -> bool:
+    def _valid_port(val: Any) -> bool:
         return isinstance(val, int) and not isinstance(val, bool) and 1 <= val <= 65535
 
-    def _valid_positive_int(val) -> bool:
+    def _valid_positive_int(val: Any) -> bool:
         return isinstance(val, int) and not isinstance(val, bool) and val > 0
 
-    def _valid_positive_number(val) -> bool:
+    def _valid_positive_number(val: Any) -> bool:
         return isinstance(val, (int, float)) and not isinstance(val, bool) and val > 0
 
-    settings = dict(_DEFAULT_SETTINGS)
+    settings: dict[str, Any] = dict(_DEFAULT_SETTINGS)
     needs_save = False
 
     if not os.path.exists(path):
@@ -68,6 +70,7 @@ def load_settings(path: str) -> dict:
         )
         needs_save = True
     else:
+        raw: dict[str, Any] = {}
         try:
             with open(path, encoding="utf-8") as fh:
                 raw = json.load(fh)
@@ -77,7 +80,6 @@ def load_settings(path: str) -> dict:
                 f"Invalid JSON in settings file, recreating with defaults: {path}"
             )
             needs_save = True
-            raw = {}
 
         # zca_udp_port
         if "zca_udp_port" in raw:
@@ -153,7 +155,7 @@ def load_settings(path: str) -> dict:
     return settings
 
 
-def save_settings(path: str, settings_dict: dict) -> None:
+def save_settings(path: str, settings_dict: dict[str, Any]) -> None:
     """Save settings to a JSON file with pretty formatting."""
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(settings_dict, fh, indent=2)
@@ -161,16 +163,16 @@ def save_settings(path: str, settings_dict: dict) -> None:
 
 
 # Load settings at import time; populate module-level constants
-_settings = load_settings(SETTINGS_FILE)
+_settings: dict[str, Any] = load_settings(SETTINGS_FILE)
 
-ZCA_UDP_PORT: int = _settings["zca_udp_port"]          # Zwift Companion App local broadcast port
-BROADCAST_HOST: str = _settings["broadcast_host"]
-BROADCAST_PORT: int = _settings["broadcast_port"]
-BROADCAST_INTERVAL: float = _settings["broadcast_interval"]  # seconds
+ZCA_UDP_PORT: int = int(_settings["zca_udp_port"])          # Zwift Companion App local broadcast port
+BROADCAST_HOST: str = str(_settings["broadcast_host"])
+BROADCAST_PORT: int = int(_settings["broadcast_port"])
+BROADCAST_INTERVAL: float = float(_settings["broadcast_interval"])  # seconds
 
 # Unit conversion factors (confirmed from zwift_messages.proto and community repos)
-MICROHERTZ_TO_HERTZ: int = _settings["microhertz_to_hertz"]   # cadenceUHz: µHz → Hz; ×60 → RPM
-MM_PER_HOUR_TO_KM_PER_HOUR: int = _settings["mm_per_hour_to_km_per_hour"]  # speed: mm/h → km/h
+MICROHERTZ_TO_HERTZ: int = int(_settings["microhertz_to_hertz"])   # cadenceUHz: µHz → Hz; ×60 → RPM
+MM_PER_HOUR_TO_KM_PER_HOUR: int = int(_settings["mm_per_hour_to_km_per_hour"])  # speed: mm/h → km/h
 
 # ---------------------------------------------------------------------------
 # ProtobufDecoder – raw varint / field parser (no .proto compilation needed)
@@ -185,7 +187,7 @@ class ProtobufDecoder:
 
     # ---- low-level reading ------------------------------------------------
 
-    def _read_varint(self):
+    def _read_varint(self) -> int:
         """Read a base-128 varint from the current position."""
         result = 0
         shift = 0
@@ -207,7 +209,7 @@ class ProtobufDecoder:
 
     # ---- field iteration --------------------------------------------------
 
-    def fields(self):
+    def fields(self) -> Generator[tuple[int, int, int | bytes], None, None]:
         """Iterate over (field_number, wire_type, value) tuples.
 
         Wire types:
@@ -220,6 +222,7 @@ class ProtobufDecoder:
             tag = self._read_varint()
             field_number = tag >> 3
             wire_type = tag & 0x07
+            value: int | bytes
             if wire_type == 0:
                 value = self._read_varint()
             elif wire_type == 1:
@@ -237,23 +240,23 @@ class ProtobufDecoder:
     # ---- convenience class method -----------------------------------------
 
     @classmethod
-    def parse_fields(cls, data: bytes) -> dict:
+    def parse_fields(cls, data: bytes) -> dict[int, int | bytes]:
         """Return {field_number: value} keeping the last value per field."""
-        result = {}
+        result: dict[int, int | bytes] = {}
         try:
             for field_number, _wt, value in cls(data).fields():
-                result[field_number] = value
+                result[field_number] = value  # type: ignore[assignment]
         except (ValueError, struct.error):
             pass
         return result
 
     @classmethod
-    def parse_repeated_field(cls, data: bytes, target_field: int) -> list:
+    def parse_repeated_field(cls, data: bytes, target_field: int) -> list[bytes]:
         """Return a list of raw bytes values for a repeated length-delimited field."""
-        items = []
+        items: list[bytes] = []
         try:
             for field_number, wire_type, value in cls(data).fields():
-                if field_number == target_field and wire_type == 2:
+                if field_number == target_field and wire_type == 2 and isinstance(value, bytes):
                     items.append(value)
         except (ValueError, struct.error):
             pass
@@ -299,7 +302,7 @@ class ZwiftPacketParser:
                 return struct.unpack('<Q', value)[0]
         return default
 
-    def parse_player_state(self, data: bytes) -> dict:
+    def parse_player_state(self, data: bytes) -> dict[str, Any]:
         """Extract relevant fields from a raw PlayerState blob."""
         fields = ProtobufDecoder.parse_fields(data)
         return {
@@ -314,7 +317,7 @@ class ZwiftPacketParser:
             "elapsed_time": self._to_int(fields.get(self._PS_FIELD_TIME, 0)),
         }
 
-    def parse_incoming(self, data: bytes) -> list:
+    def parse_incoming(self, data: bytes) -> list[dict[str, Any]]:
         """Parse a ServerToClient packet; returns a list of PlayerState dicts."""
         player_state_blobs = ProtobufDecoder.parse_repeated_field(
             data, self._S2C_PLAYER_STATES_FIELD
@@ -322,13 +325,13 @@ class ZwiftPacketParser:
         return [self.parse_player_state(blob) for blob in player_state_blobs]
 
     @staticmethod
-    def _state_has_data(state: dict | None) -> bool:
+    def _state_has_data(state: dict[str, Any] | None) -> bool:
         """Return True if the state dict has at least one non-zero meaningful field."""
         if not state:
             return False
         return bool(state.get("rider_id") or state.get("power") or state.get("heartrate"))
 
-    def parse_outgoing(self, raw_data: bytes) -> dict | None:
+    def parse_outgoing(self, raw_data: bytes) -> dict[str, Any] | None:
         """Parse a ClientToServer packet (our own rider data).
 
         Tries multiple header-skip strategies and fallback parse approaches for
@@ -364,7 +367,7 @@ class ZwiftPacketParser:
         if raw_data not in candidates:
             candidates.append(raw_data)
 
-        fallbacks: list[dict] = []
+        fallbacks: list[dict[str, Any]] = []
 
         for payload in candidates:
             if len(payload) <= 4:
@@ -418,7 +421,7 @@ class ZwiftDataStore:
         self._last_update: float = 0.0
         self._total_packets: int = 0
 
-    def update(self, state: dict) -> None:
+    def update(self, state: dict[str, Any]) -> None:
         """Store the latest values from a parsed PlayerState dict."""
         with self._lock:
             self._power = state.get("power", self._power)
@@ -436,7 +439,7 @@ class ZwiftDataStore:
         with self._lock:
             return self._rider_id
 
-    def get_data(self) -> dict:
+    def get_data(self) -> dict[str, Any]:
         """Return a dict with human-readable converted values."""
         with self._lock:
             # Defense-in-depth: ensure stored values are int before arithmetic/JSON
@@ -473,12 +476,12 @@ class UDPBroadcaster:
         self._port = port
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def send(self, data: dict) -> None:
+    def send(self, data: dict[str, Any]) -> None:
         """JSON-encode *data* and send it via UDP."""
         payload = json.dumps(data).encode("utf-8")
         self._sock.sendto(payload, (self._host, self._port))
 
-    def log_console(self, data: dict) -> None:
+    def log_console(self, data: dict[str, Any]) -> None:
         """Print a formatted summary to the console."""
         print(
             f"\r⚡ {data['power']:>4}W  "
