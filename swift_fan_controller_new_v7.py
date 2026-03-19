@@ -67,7 +67,7 @@ VALID_DATA_SOURCES: tuple[DataSource, ...] = tuple(DataSource)
 VALID_ZONE_MODES: tuple[ZoneMode, ...] = tuple(ZoneMode)
 
 Node: Any = None
-ANTPLUS_NETWORK_KEY: Any = None
+ANTPLUS_NETWORK_KEY: Any = None  # type: ignore[reportConstantRedefinition]
 PowerMeter: Any = None
 PowerData: Any = None
 HeartRate: Any = None
@@ -381,7 +381,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 2) Power zóna: min_watt < max_watt
     try:
-        zt = settings.get("power_zones") or {}
+        zt: dict[str, Any] = settings.get("power_zones") or {}
         min_watt = zt.get("min_watt")
         max_watt = zt.get("max_watt")
         if isinstance(min_watt, int) and isinstance(max_watt, int):
@@ -402,7 +402,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 3) Power zóna százalékok: z1_max_percent < z2_max_percent
     try:
-        zt = settings.get("power_zones") or {}
+        zt: dict[str, Any] = settings.get("power_zones") or {}
         z1p = zt.get("z1_max_percent")
         z2p = zt.get("z2_max_percent")
         if isinstance(z1p, int) and isinstance(z2p, int) and z1p >= z2p:
@@ -420,7 +420,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 4) HR zónák: z1_max_percent < z2_max_percent és resting_hr < max_hr
     try:
-        hrz = settings.get("heart_rate_zones") or {}
+        hrz: dict[str, Any] = settings.get("heart_rate_zones") or {}
         z1p = hrz.get("z1_max_percent")
         z2p = hrz.get("z2_max_percent")
         if isinstance(z1p, int) and isinstance(z2p, int):
@@ -450,7 +450,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 5) valid_min_hr < valid_max_hr
     try:
-        hrz = settings.get("heart_rate_zones") or {}
+        hrz: dict[str, Any] = settings.get("heart_rate_zones") or {}
         valid_min = hrz.get("valid_min_hr")
         valid_max = hrz.get("valid_max_hr")
         if isinstance(valid_min, int) and isinstance(valid_max, int):
@@ -1336,13 +1336,13 @@ async def _scan_ble_with_autodiscovery(
             timeout=scan_timeout, return_adv=True
         )
 
-        items = discovered.values() if isinstance(discovered, dict) else discovered
+        items: Any = discovered.values() if isinstance(discovered, dict) else discovered
 
         for item in items:
             device: Any = None
             uuids: List[str] = []
             if isinstance(item, tuple) and len(item) == 2:
-                device = item[0]
+                device: Any = item[0]
                 adv_data: Any = item[1]
                 uuids = (
                     list(adv_data.service_uuids)
@@ -1350,7 +1350,7 @@ async def _scan_ble_with_autodiscovery(
                     else []
                 )
             else:
-                device = item
+                device: Any = item
 
             dev_name: Optional[str] = getattr(device, "name", None)
             dev_addr: str = getattr(device, "address", str(device))
@@ -1358,7 +1358,7 @@ async def _scan_ble_with_autodiscovery(
 
             if target_service_uuid and matched is None:
                 if any(u.lower() == target_service_uuid.lower() for u in uuids):
-                    matched = device
+                    matched: Any = device
 
     except TypeError:
         # Fallback régebbi Bleak verziókhoz (return_adv nem támogatott)
@@ -2491,7 +2491,7 @@ class ZwiftUDPInputHandler:
         valid_any = False
 
         if self.process_power and "power" in data:
-            p = data["power"]
+            p: Any = data["power"]
             min_watt = self.settings["power_zones"]["min_watt"]
             max_watt = self.settings["power_zones"]["max_watt"]
             if is_valid_power(p, min_watt, max_watt):
@@ -2508,7 +2508,7 @@ class ZwiftUDPInputHandler:
             valid_min_hr: int = hrz.get("valid_min_hr", 30)
             valid_max_hr: int = hrz.get("valid_max_hr", 220)
 
-            h = data["heartrate"]
+            h: Any = data["heartrate"]
             if is_valid_hr(h, valid_min_hr, valid_max_hr):
                 try:
                     self.hr_queue.put_nowait(round(h))
@@ -3042,7 +3042,7 @@ class FanController:
         self._antplus_thread: Optional[threading.Thread] = None
         self._tasks: list[asyncio.Task[Any]] = []
         self._running = True
-        self._zwift_proc: Optional[subprocess.Popen[bytes]] = None
+        self._zwift_proc: Optional[subprocess.Popen[Any]] = None
         # Handler ref-ek (HUD és leállítás számára)
         self._ble_fan: Optional[BLEFanOutputController] = None
         self._ble_power: Optional[BLEPowerInputHandler] = None
@@ -3507,8 +3507,8 @@ class HUDWindow:
         # ───────── ROOT ─────────
         self._root = tk.Tk()
         self._root.title("LCARS Fan HUD")
-        self._root.attributes("-topmost", True)
-        self._root.attributes("-alpha", 0.92)
+        self._root.attributes("-topmost", True)  # type: ignore[reportUnknownMemberType]
+        self._root.attributes("-alpha", 0.92)  # type: ignore[reportUnknownMemberType]
         self._root.overrideredirect(True)
         self._root.geometry(f"{self._base_width}x{self._base_height}+20+20")
         self._root.configure(bg=self.BG)
@@ -3518,8 +3518,8 @@ class HUDWindow:
         self._font_family = self._detect_best_font()
 
         # Referencia listák a skálázható label-ekhez
-        self._row_key_labels: list = []
-        self._status_key_labels: list = []
+        self._row_key_labels: list[Any] = []
+        self._status_key_labels: list[Any] = []
 
         # ───────── LCARS FEJLÉC ─────────
         self._header_height = 50
@@ -3645,7 +3645,7 @@ class HUDWindow:
             command=self._on_alpha_change,
             showvalue=False, length=160, width=14,
         )
-        self._alpha_slider.set(92)
+        self._alpha_slider.set(92)  # type: ignore[reportUnknownMemberType]
         self._alpha_slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
 
         # ───────── DRAG & RESIZE ─────────
@@ -3656,7 +3656,7 @@ class HUDWindow:
         self._resize_start_x = 0
         self._resize_start_y = 0
 
-        drag_widgets = [
+        drag_widgets: list[Any] = [
             self._lbl_zone, self._lbl_zone_label,
             self._lbl_power, self._lbl_hr,
             self._lbl_ble, self._lbl_ble_sens, self._lbl_ant, self._lbl_zwift_udp,
@@ -3760,13 +3760,13 @@ class HUDWindow:
 
     @staticmethod
     def _arc_points(cx: float, cy: float, r: float,
-                    start_deg: float, end_deg: float, steps: int = 20) -> list:
+                    start_deg: float, end_deg: float, steps: int = 20) -> list[float]:
         """Ív pontjait adja vissza [x1,y1, x2,y2, ...] formátumban.
 
         A szögek matematikai konvencióban (0°=jobb, CCW pozitív),
         Canvas koordinátákra konvertálva (y lefelé nő).
         """
-        pts: list = []
+        pts: list[float] = []
         for i in range(steps + 1):
             angle = math.radians(start_deg + (end_deg - start_deg) * i / steps)
             pts.append(cx + r * math.cos(angle))
@@ -3814,7 +3814,7 @@ class HUDWindow:
         # Külső lekerekített sarok (csak felső-bal)
         r = max(12, int(18 * s))
         canvas.create_rectangle(0, 0, r, r, fill=self.BG, outline="")
-        canvas.create_arc(0, 0, 2 * r, 2 * r, start=90, extent=90,
+        canvas.create_arc(0, 0, 2 * r, 2 * r, start=90, extent=90,  # type: ignore[reportUnknownMemberType]
                           fill=self.LCARS_ORANGE, outline="")
 
     def _draw_footer(self, canvas: tk.Canvas, w: int) -> None:
@@ -3859,7 +3859,7 @@ class HUDWindow:
         # Külső lekerekített sarok (csak alsó-bal)
         r = max(12, int(18 * s))
         canvas.create_rectangle(0, fh - r, r, fh, fill=self.BG, outline="")
-        canvas.create_arc(0, fh - 2 * r, 2 * r, fh, start=180, extent=90,
+        canvas.create_arc(0, fh - 2 * r, 2 * r, fh, start=180, extent=90,  # type: ignore[reportUnknownMemberType]
                           fill=self.LCARS_BLUE, outline="")
 
     def _draw_sidebar(self, h: int) -> None:
@@ -3987,8 +3987,8 @@ class HUDWindow:
         self._resize_grip.place(relx=1.0, rely=1.0, anchor="se")
 
     def _set_alpha_from_menu(self, percent: int) -> None:
-        self._root.attributes("-alpha", percent / 100.0)
-        self._alpha_slider.set(percent)
+        self._root.attributes("-alpha", percent / 100.0)  # type: ignore[reportUnknownMemberType]
+        self._alpha_slider.set(percent)  # type: ignore[reportUnknownMemberType]
         self._alpha_value.config(text=f"{percent}%")
 
     def _on_alpha_change(self, value: str) -> None:
@@ -3996,7 +3996,7 @@ class HUDWindow:
             v = int(float(value))
         except ValueError:
             return
-        self._root.attributes("-alpha", v / 100.0)
+        self._root.attributes("-alpha", v / 100.0)  # type: ignore[reportUnknownMemberType]
         self._alpha_value.config(text=f"{v}%")
 
     def _on_drag_start(self, event: tk.Event) -> None:
@@ -4080,7 +4080,7 @@ class HUDWindow:
                     p_s = "OK" if power_ok else ("--" if not power_ble else "FAIL")
                     h_s = "OK" if hr_ok else ("--" if not hr_ble else "FAIL")
 
-                    ble_states = []
+                    ble_states: list[bool] = []
                     if power_ble: ble_states.append(power_ok)
                     if hr_ble: ble_states.append(hr_ok)
 
@@ -4109,7 +4109,7 @@ class HUDWindow:
                 p_s = "OK" if power_ok else ("--" if not power_ant else "FAIL")
                 h_s = "OK" if hr_ok else ("--" if not hr_ant else "FAIL")
 
-                ant_states = []
+                ant_states: list[bool] = []
                 if power_ant: ant_states.append(power_ok)
                 if hr_ant: ant_states.append(hr_ok)
 
