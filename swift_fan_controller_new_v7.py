@@ -3879,11 +3879,11 @@ class HUDWindow:
             text=text,
             fg="#000a14",
             bg=self.TEXT_DIM,
-            font=(self._font_family, 7, "bold"),
+            font=(self._font_family, 9, "bold"),
             padx=5, pady=2,
             anchor="center",
         )
-        lbl.pack(side=tk.LEFT, padx=(0, 2), pady=0)
+        lbl.pack(side=tk.LEFT, padx=(0, 2), pady=0, expand=True, fill=tk.X)
         lbl.bind("<ButtonPress-1>", self._on_drag_start)
         lbl.bind("<B1-Motion>", self._on_drag_move)
         return lbl
