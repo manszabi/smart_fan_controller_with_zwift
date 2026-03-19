@@ -74,7 +74,7 @@ Röviden a `settings.json` fő szekciói:
 | Szekció | Tartalom |
 |---------|----------|
 | Globális | cooldown, buffer, dropout timeout |
-| `zone_thresholds` | FTP, watt tartomány, zóna százalékok |
+| `power_zones` | FTP, watt tartomány, zóna százalékok, 0W azonnali leállás |
 | `ble` | ESP32 ventilátor vezérlő (kimenet) |
 | `datasource` | Adatforrás kiválasztás, ANT+/BLE/Zwift specifikus beállítások |
 | `heart_rate_zones` | HR zónák, zone_mode (power_only/hr_only/higher_wins) |
@@ -87,7 +87,7 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "zone_thresholds": { "ftp": 200 },
+  "power_zones": { "ftp": 200 },
   "ble": { "device_name": "FanController" },
   "datasource": {
     "power_source": "antplus",
@@ -104,7 +104,7 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "zone_thresholds": { "ftp": 250 },
+  "power_zones": { "ftp": 250 },
   "ble": { "device_name": null },
   "datasource": {
     "power_source": "ble",
@@ -121,7 +121,7 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "zone_thresholds": { "ftp": 180 },
+  "power_zones": { "ftp": 180 },
   "ble": { "device_name": "FanController", "pin_code": 123456 },
   "datasource": {
     "power_source": "zwiftudp",
@@ -138,7 +138,7 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "zone_thresholds": { "ftp": 200 },
+  "power_zones": { "ftp": 200 },
   "datasource": {
     "power_source": "antplus"
   },

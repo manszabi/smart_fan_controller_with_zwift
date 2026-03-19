@@ -7,7 +7,7 @@ A program a `settings.json` fájlból olvassa a beállításokat. Ha a fájl nem
 ## Gyors kezdés
 
 1. Másold a `settings.example.json` fájlt `settings.json` néven.
-2. Állítsd be az FTP értékedet (`zone_thresholds.ftp`).
+2. Állítsd be az FTP értékedet (`power_zones.ftp`).
 3. Válaszd ki az adatforrást (`datasource.power_source`, `datasource.hr_source`).
 4. Ha BLE ventilátort használsz, állítsd be a `ble.device_name` mezőt (vagy hagyd `null`-on az auto-discovery-hez).
 5. Indítsd el: `python swift_fan_controller_new_v7.py`
@@ -23,11 +23,10 @@ A program a `settings.json` fájlból olvassa a beállításokat. Ha a fájl nem
 | `minimum_samples` | int | 1–1000 | 6 | Minimum minta érvényes átlaghoz (fallback). |
 | `buffer_rate_hz` | int | 1–60 | 4 | Várt mintavételi frekvencia Hz-ben (fallback). |
 | `dropout_timeout` | int | 1–120 | 5 | Adatforrás kiesés timeout másodpercben (fallback). |
-| `zero_power_immediate` | bool | – | false | Ha true, 0W → azonnali LEVEL:0 (cooldown nélkül). |
 
 ---
 
-## Teljesítmény zóna határok (`zone_thresholds`)
+## Teljesítmény zóna határok (`power_zones`)
 
 | Mező | Típus | Tartomány | Alapértelmezett | Leírás |
 |------|-------|-----------|-----------------|--------|
@@ -36,6 +35,7 @@ A program a `settings.json` fájlból olvassa a beállításokat. Ha a fájl nem
 | `max_watt` | int | 1–100000 | 1000 | Maximális érvényes watt. |
 | `z1_max_percent` | int | 1–100 | 60 | Z1 felső határ az FTP %-ában. |
 | `z2_max_percent` | int | 1–100 | 89 | Z2 felső határ az FTP %-ában. |
+| `zero_power_immediate` | bool | – | false | Ha true, 0W → azonnali LEVEL:0 (cooldown nélkül). |
 
 **Zóna kiosztás:**
 

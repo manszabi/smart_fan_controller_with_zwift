@@ -4,13 +4,13 @@
   "minimum_samples": 6,
   "buffer_rate_hz": 4,
   "dropout_timeout": 5,
-  "zero_power_immediate": false,
-  "zone_thresholds": {
+  "power_zones": {
     "ftp": 200,
     "min_watt": 0,
     "max_watt": 1000,
     "z1_max_percent": 60,
-    "z2_max_percent": 89
+    "z2_max_percent": 89,
+    "zero_power_immediate": false
   },
   "ble": {
     "device_name": null,

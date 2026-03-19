@@ -126,13 +126,13 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "minimum_samples": 6,
     "buffer_rate_hz": 4,
     "dropout_timeout": 5,
-    "zero_power_immediate": False,
-    "zone_thresholds": {
+    "power_zones": {
         "ftp": 180,
         "min_watt": 0,
         "max_watt": 1000,
         "z1_max_percent": 60,
         "z2_max_percent": 89,
+        "zero_power_immediate": False,
     },
     "ble": {
         "device_name": None,
@@ -232,16 +232,15 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
     _load_int(loaded, settings, "minimum_samples", 1, 1000)
     _load_int(loaded, settings, "buffer_rate_hz", 1, 60)
     _load_int(loaded, settings, "dropout_timeout", 1, 120)
-    _load_bool(loaded, settings, "zero_power_immediate")
-
-    # --- Zóna határok ---
-    if isinstance(loaded.get("zone_thresholds"), dict):
-        zt = loaded["zone_thresholds"]
-        _load_int(zt, settings["zone_thresholds"], "ftp", 100, 500)
-        _load_int(zt, settings["zone_thresholds"], "min_watt", 0, 9999)
-        _load_int(zt, settings["zone_thresholds"], "max_watt", 1, 100000)
-        _load_int(zt, settings["zone_thresholds"], "z1_max_percent", 1, 100)
-        _load_int(zt, settings["zone_thresholds"], "z2_max_percent", 1, 100)
+    # --- Teljesítmény zóna beállítások ---
+    if isinstance(loaded.get("power_zones"), dict):
+        pz = loaded["power_zones"]
+        _load_int(pz, settings["power_zones"], "ftp", 100, 500)
+        _load_int(pz, settings["power_zones"], "min_watt", 0, 9999)
+        _load_int(pz, settings["power_zones"], "max_watt", 1, 100000)
+        _load_int(pz, settings["power_zones"], "z1_max_percent", 1, 100)
+        _load_int(pz, settings["power_zones"], "z2_max_percent", 1, 100)
+        _load_bool(pz, settings["power_zones"], "zero_power_immediate")
 
     # --- BLE kimeneti beállítások ---
     if isinstance(loaded.get("ble"), dict):
@@ -377,7 +376,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 2) Power zóna: min_watt < max_watt
     try:
-        zt = settings.get("zone_thresholds") or {}
+        zt = settings.get("power_zones") or {}
         min_watt = zt.get("min_watt")
         max_watt = zt.get("max_watt")
         if isinstance(min_watt, int) and isinstance(max_watt, int):
@@ -398,7 +397,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 3) Power zóna százalékok: z1_max_percent < z2_max_percent
     try:
-        zt = settings.get("zone_thresholds") or {}
+        zt = settings.get("power_zones") or {}
         z1p = zt.get("z1_max_percent")
         z2p = zt.get("z2_max_percent")
         if isinstance(z1p, int) and isinstance(z2p, int) and z1p >= z2p:
@@ -2482,8 +2481,8 @@ class ZwiftUDPInputHandler:
 
         if self.process_power and "power" in data:
             p = data["power"]
-            min_watt = self.settings["zone_thresholds"]["min_watt"]
-            max_watt = self.settings["zone_thresholds"]["max_watt"]
+            min_watt = self.settings["power_zones"]["min_watt"]
+            max_watt = self.settings["power_zones"]["max_watt"]
             if is_valid_power(p, min_watt, max_watt):
                 try:
                     self.power_queue.put_nowait(round(p))
@@ -2542,8 +2541,8 @@ async def power_processor_task(
         settings: Betöltött beállítások dict-je.
         power_zones: Kiszámított power zóna határok.
     """
-    min_watt = settings["zone_thresholds"]["min_watt"]
-    max_watt = settings["zone_thresholds"]["max_watt"]
+    min_watt = settings["power_zones"]["min_watt"]
+    max_watt = settings["power_zones"]["max_watt"]
     hr_enabled = settings.get("heart_rate_zones", {}).get("enabled", False)
     zone_mode = (
         settings["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
@@ -2741,7 +2740,7 @@ async def zone_controller_task(
         if hr_enabled
         else ZoneMode.POWER_ONLY
     )
-    zero_power_immediate = settings.get("zero_power_immediate", False)
+    zero_power_immediate = settings["power_zones"].get("zero_power_immediate", False)
     zero_hr_immediate = settings["heart_rate_zones"].get("zero_hr_immediate", False)
     power_buf = _resolve_buffer_settings(settings, "power")
     hr_buf = _resolve_buffer_settings(settings, "hr")
@@ -3066,7 +3065,7 @@ class FanController:
         print("-" * 60)
         print(f"  Smart Fan Controller v{__version__}  |  Power+HR → BLE Fan")
         print("-" * 60)
-        zt = s["zone_thresholds"]
+        zt = s["power_zones"]
         print(f"FTP: {zt['ftp']}W | Érvényes tartomány: 0–{zt['max_watt']}W")
 
         power_zones = calculate_power_zones(
@@ -3095,7 +3094,7 @@ class FanController:
 
         print(
             f"Cooldown: {s['cooldown_seconds']}s  |  "
-            f"0W azonnali: {'Igen' if s['zero_power_immediate'] else 'Nem'}  |  "
+            f"0W azonnali: {'Igen' if s['power_zones'].get('zero_power_immediate', False) else 'Nem'}  |  "
             f"0HR azonnali: {'Igen' if s['heart_rate_zones'].get('zero_hr_immediate', False) else 'Nem'}"
         )
         ble_fan_name = s["ble"]["device_name"]
@@ -3128,11 +3127,11 @@ class FanController:
 
         # --- Zóna határok kiszámítása ---
         power_zones = calculate_power_zones(
-            s["zone_thresholds"]["ftp"],
-            s["zone_thresholds"]["min_watt"],
-            s["zone_thresholds"]["max_watt"],
-            s["zone_thresholds"]["z1_max_percent"],
-            s["zone_thresholds"]["z2_max_percent"],
+            s["power_zones"]["ftp"],
+            s["power_zones"]["min_watt"],
+            s["power_zones"]["max_watt"],
+            s["power_zones"]["z1_max_percent"],
+            s["power_zones"]["z2_max_percent"],
         )
         hr_zones = (
             calculate_hr_zones(
@@ -4137,7 +4136,7 @@ class HUDWindow:
 
             # ── Állapot csík frissítése ──
             # zero_power_immediate
-            zpi = self._ctrl.settings.get("zero_power_immediate", False)
+            zpi = self._ctrl.settings["power_zones"].get("zero_power_immediate", False)
             self._tile_zero_imm.config(bg=self.LCARS_CYAN if zpi else self.TEXT_DIM)
 
             # zero_hr_immediate
