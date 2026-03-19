@@ -5,6 +5,7 @@
   "buffer_rate_hz": 4,
   "dropout_timeout": 5,
   "zero_power_immediate": false,
+  "zero_hr_immediate": false,
   "zone_thresholds": {
     "ftp": 200,
     "min_watt": 0,

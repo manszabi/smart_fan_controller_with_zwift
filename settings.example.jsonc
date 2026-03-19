@@ -16,6 +16,8 @@
 
   // Ha true, 0W detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
   "zero_power_immediate": false,
+  // Ha true, 0 HR zóna detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
+  "zero_hr_immediate": false,
 
   // ============================================================
   // TELJESÍTMÉNY ZÓNA HATÁROK
