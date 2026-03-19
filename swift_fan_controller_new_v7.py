@@ -1347,13 +1347,14 @@ async def _scan_ble_with_autodiscovery(
             timeout=scan_timeout, return_adv=True
         )
 
-        items: Any = discovered.values() if isinstance(discovered, dict) else discovered
+        raw_items = discovered.values() if isinstance(discovered, dict) else discovered
+        items: list[Any] = list(raw_items)
 
         for item in items:
             device: Any = None
             uuids: List[str] = []
             if isinstance(item, tuple) and len(item) == 2:
-                device: Any = item[0]
+                device = item[0]
                 adv_data: Any = item[1]
                 uuids = (
                     list(adv_data.service_uuids)
@@ -1361,7 +1362,7 @@ async def _scan_ble_with_autodiscovery(
                     else []
                 )
             else:
-                device: Any = item
+                device = item
 
             dev_name: Optional[str] = getattr(device, "name", None)
             dev_addr: str = getattr(device, "address", str(device))
@@ -1369,7 +1370,7 @@ async def _scan_ble_with_autodiscovery(
 
             if target_service_uuid and matched is None:
                 if any(u.lower() == target_service_uuid.lower() for u in uuids):
-                    matched: Any = device
+                    matched = device
 
     except TypeError:
         # Fallback régebbi Bleak verziókhoz (return_adv nem támogatott)
@@ -2502,7 +2503,7 @@ class ZwiftUDPInputHandler:
         valid_any = False
 
         if self.process_power and "power" in data:
-            p: Any = data["power"]
+            p: int | float = data["power"]
             min_watt = self.settings["power_zones"]["min_watt"]
             max_watt = self.settings["power_zones"]["max_watt"]
             if is_valid_power(p, min_watt, max_watt):
@@ -2519,7 +2520,7 @@ class ZwiftUDPInputHandler:
             valid_min_hr: int = hrz.get("valid_min_hr", 30)
             valid_max_hr: int = hrz.get("valid_max_hr", 220)
 
-            h: Any = data["heartrate"]
+            h: int | float = data["heartrate"]
             if is_valid_hr(h, valid_min_hr, valid_max_hr):
                 try:
                     self.hr_queue.put_nowait(round(h))
@@ -3867,7 +3868,7 @@ class HUDWindow:
         sw = max(10, int(16 * s))
         R = max(14, int(26 * s))
 
-        pts = [
+        pts: list[int | float] = [
             0, 0,
             w - 6, 0,
             w - 6, bar_h,
@@ -3912,7 +3913,7 @@ class HUDWindow:
         R = max(14, int(26 * s))
         bar_top = fh - bar_h
 
-        pts = [
+        pts: list[int | float] = [
             0, 0,
             sw, 0,
         ]
