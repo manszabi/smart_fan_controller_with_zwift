@@ -49,7 +49,7 @@ import os
 
 from collections import deque
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 # --- Enum-ok a magic string-ek kiváltásához ---
 # str öröklés: JSON-ból jövő string értékekkel is kompatibilis (==)
@@ -63,8 +63,8 @@ class ZoneMode(str, enum.Enum):
     HR_ONLY = "hr_only"
     HIGHER_WINS = "higher_wins"
 
-VALID_DATA_SOURCES: tuple = tuple(DataSource)
-VALID_ZONE_MODES: tuple = tuple(ZoneMode)
+VALID_DATA_SOURCES: tuple[DataSource, ...] = tuple(DataSource)
+VALID_ZONE_MODES: tuple[ZoneMode, ...] = tuple(ZoneMode)
 
 Node: Any = None
 ANTPLUS_NETWORK_KEY: Any = None
@@ -80,19 +80,19 @@ BleakScanner: Any = None
 _ANTPLUS_AVAILABLE: bool = False
 _BLEAK_AVAILABLE: bool = False
 try:
-    from openant.easy.node import Node
-    from openant.devices import ANTPLUS_NETWORK_KEY
-    from openant.devices.power_meter import PowerMeter, PowerData
-    from openant.devices.heart_rate import HeartRate, HeartRateData
+    from openant.easy.node import Node  # type: ignore[import-untyped]
+    from openant.devices import ANTPLUS_NETWORK_KEY  # type: ignore[import-untyped, assignment]
+    from openant.devices.power_meter import PowerMeter, PowerData  # type: ignore[import-untyped]
+    from openant.devices.heart_rate import HeartRate, HeartRateData  # type: ignore[import-untyped]
 
-    _ANTPLUS_AVAILABLE = True
+    _ANTPLUS_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
     pass
 
 try:
-    from bleak import BleakClient, BleakScanner
+    from bleak import BleakClient, BleakScanner  # type: ignore[import-untyped]
 
-    _BLEAK_AVAILABLE = True
+    _BLEAK_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
     pass
 
@@ -471,7 +471,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
     return settings
 
 
-def _load_int(src: dict, dst: dict, key: str, lo: int, hi: int) -> None:
+def _load_int(src: dict[str, Any], dst: dict[str, Any], key: str, lo: int, hi: int) -> None:
     """Helper: int mezőt tölt be érvényes tartomány esetén.
 
     Törtszámokat és bool értékeket visszautasítja.
@@ -498,7 +498,7 @@ def _load_int(src: dict, dst: dict, key: str, lo: int, hi: int) -> None:
         print(f"⚠ Érvénytelen '{key}' érték: {v} ({lo}–{hi} közötti egész kell)")
 
 
-def _load_bool(src: dict, dst: dict, key: str) -> None:
+def _load_bool(src: dict[str, Any], dst: dict[str, Any], key: str) -> None:
     """Helper: bool mezőt tölt be."""
     if key in src:
         if isinstance(src[key], bool):
@@ -634,7 +634,7 @@ def zone_for_power(power: float, zones: Dict[int, Tuple[int, int]]) -> int:
     if power <= 0:
         return 0
     # Védekezés üres vagy hibás zones dict ellen (ValueError elkerülése)
-    positive_lows = [lo for lo, hi in zones.values() if lo > 0]
+    positive_lows = [lo for lo, _hi in zones.values() if lo > 0]
     if not positive_lows:
         return 0
     min_lo = min(positive_lows)
@@ -717,7 +717,7 @@ def is_valid_hr(hr: Any, valid_min_hr: int, valid_max_hr: int) -> bool:
 # ============================================================
 
 
-def compute_average(samples: deque) -> Optional[float]:
+def compute_average(samples: deque[float]) -> Optional[float]:
     """Kiszámítja a minták számtani átlagát.
 
     Args:
@@ -1025,7 +1025,7 @@ class _RollingAverager:
     ) -> None:
         rate = max(1, int(buffer_rate_hz))
         self.buffersize = max(1, int(buffer_seconds) * rate)
-        self.buffer: deque = deque(maxlen=self.buffersize)
+        self.buffer: deque[float] = deque(maxlen=self.buffersize)
         self.minimum_samples = minimum_samples
         # Védelem: effective_minimum soha nem nagyobb, mint a buffer fele
         self.effective_minimum = min(self.minimum_samples, max(1, self.buffersize // 2))
@@ -1424,6 +1424,11 @@ class BLEFanOutputController:
         # Utolsó reconnect kísérlet ideje – non-blocking reconnect logikához
         self._last_reconnect_attempt: float = 0.0
 
+    @property
+    def auth_failed(self) -> bool:
+        """True ha az authentikáció sikertelen volt (PIN hibás)."""
+        return self._auth_failed
+
     def __repr__(self) -> str:
         return (
             f"BLEFanOutputController(device={self.device_name!r}, "
@@ -1572,7 +1577,7 @@ class BLEFanOutputController:
 
         try:
             auth_event = asyncio.Event()
-            auth_result: list = [""]
+            auth_result: list[str] = [""]
 
             def _notify_cb(sender: Any, data: bytes) -> None:
                 auth_result[0] = data.decode("utf-8", errors="replace").strip()
@@ -1879,7 +1884,7 @@ class ANTPlusInputHandler:
 
         self._running = threading.Event()
         self._node: Optional[Any] = None
-        self._devices: list = []
+        self._devices: list[Any] = []
         self._lastdata: float = 0.0  # utolsó bármilyen adat ideje (thread loop használja)
         self._node_started: float = 0.0  # node.start() indulási ideje (watchdog-hoz)
         self.power_lastdata: float = 0.0
@@ -2933,7 +2938,7 @@ async def dropout_checker_task(
 
 
 class BLECombinedSensor:
-    def __init__(self, power_handler=None, hr_handler=None):
+    def __init__(self, power_handler: Optional[Any] = None, hr_handler: Optional[Any] = None):
         self.power_handler = power_handler
         self.hr_handler = hr_handler
 
@@ -3035,9 +3040,9 @@ class FanController:
         self.settings = load_settings(settings_file)
         self._antplus_handler: Optional[ANTPlusInputHandler] = None
         self._antplus_thread: Optional[threading.Thread] = None
-        self._tasks: list = []
+        self._tasks: list[asyncio.Task[Any]] = []
         self._running = True
-        self._zwift_proc: Optional[subprocess.Popen] = None
+        self._zwift_proc: Optional[subprocess.Popen[bytes]] = None
         # Handler ref-ek (HUD és leállítás számára)
         self._ble_fan: Optional[BLEFanOutputController] = None
         self._ble_power: Optional[BLEPowerInputHandler] = None
@@ -3046,6 +3051,21 @@ class FanController:
         self._state: Optional[ControllerState] = None
         self._cooldown_ctrl: Optional[CooldownController] = None
         self._ble_sensor_handler: Optional[BLECombinedSensor] = None
+
+    @property
+    def state(self) -> "Optional[ControllerState]":
+        """Aktuális vezérlő állapot (None ha még nem indult el a run())."""
+        return self._state
+
+    @property
+    def ble_fan(self) -> "Optional[BLEFanOutputController]":
+        """BLE ventilátor kimeneti vezérlő (None ha nincs)."""
+        return self._ble_fan
+
+    @property
+    def cooldown_ctrl(self) -> "Optional[CooldownController]":
+        """Hűtési időkorlát vezérlő (None ha még nem indult el a run())."""
+        return self._cooldown_ctrl
 
     def __repr__(self) -> str:
         ds = self.settings.get("datasource", {})
@@ -3390,8 +3410,8 @@ class FanController:
         except asyncio.CancelledError:
             pass
         finally:
-            # Fix #12: guard against None if setup crashed before ble_fan init
-            if self._ble_fan is not None:
+            # Guard against None if setup crashed before ble_fan init
+            if self._ble_fan is not None:  # type: ignore[redundant-expr]
                 await self._ble_fan.disconnect()
                 self._ble_fan = None
             # Fix #13: ANT+ leállítás a stop()-ban történik, nem duplikáljuk itt
@@ -4008,9 +4028,9 @@ class HUDWindow:
 
     def _update(self) -> None:
         try:
-            state = self._ctrl._state
-            ble_fan = self._ctrl._ble_fan
-            cool = self._ctrl._cooldown_ctrl
+            state = self._ctrl.state
+            ble_fan = self._ctrl.ble_fan
+            cool = self._ctrl.cooldown_ctrl
 
             if state is not None:
                 zone, power, hr = state.ui_snapshot.read()
@@ -4035,7 +4055,7 @@ class HUDWindow:
 
             # BLE fan
             if ble_fan is not None:
-                if ble_fan._auth_failed:
+                if ble_fan.auth_failed:
                     self._lbl_ble.config(text="PIN FAIL", fg=self.LCARS_GOLD)
                 elif ble_fan.is_connected:
                     self._lbl_ble.config(text="ONLINE", fg=self.LCARS_CYAN)
@@ -4280,7 +4300,7 @@ def main() -> None:
     shutdown_event = asyncio.Event()
     # Mutable konténer: a signal handler-nek kell a HUD referencia,
     # ami később jön létre. Lista azért, hogy nonlocal nélkül módosítható legyen.
-    hud_ref: list = [None]
+    hud_ref: list[Any] = [None]
 
     def cleanup() -> None:
         nonlocal cleaned_up
@@ -4321,7 +4341,7 @@ def main() -> None:
         """Controller futtatása shutdown_event-ig."""
         controller_task = asyncio.create_task(controller.run())
         shutdown_task = asyncio.create_task(shutdown_event.wait())
-        done, pending = await asyncio.wait(
+        _done, pending = await asyncio.wait(
             [controller_task, shutdown_task],
             return_when=asyncio.FIRST_COMPLETED,
         )
