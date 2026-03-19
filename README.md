@@ -27,7 +27,7 @@ A program valós időben fogadja a teljesítmény (watt) és szívfrekvencia (bp
 - **Három zóna mód:** power_only, hr_only, higher_wins (a magasabb zóna nyer)
 - **Adaptív cooldown:** zóna csökkentésnél várakozás (felezés nagy esésnél, duplázás visszaemelkedésnél)
 - **Auto-discovery:** BLE és ANT+ eszközök automatikus felderítése és logolása
-- **Watchdog:** ANT+ USB dongle kihúzás/lemerülés automatikus detektálása és reconnect
+- **Watchdog:** ANT+ USB dongle kihúzás/lemerülés automatikus detektálása és reconnect; Zwift UDP Monitor → API Polling automatikus fallback
 - **HUD:** Star Trek LCARS stílusú lebegő ablak (tkinter) – valós idejű zóna, watt, HR kijelzés
 - **Headless mód:** tkinter nélkül is fut (pl. Raspberry Pi terminálban)
 
