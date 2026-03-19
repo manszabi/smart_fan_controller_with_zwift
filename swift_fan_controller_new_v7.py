@@ -127,6 +127,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "buffer_rate_hz": 4,
     "dropout_timeout": 5,
     "zero_power_immediate": False,
+    "zero_hr_immediate": False,
     "zone_thresholds": {
         "ftp": 180,
         "min_watt": 0,
@@ -232,6 +233,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
     _load_int(loaded, settings, "buffer_rate_hz", 1, 60)
     _load_int(loaded, settings, "dropout_timeout", 1, 120)
     _load_bool(loaded, settings, "zero_power_immediate")
+    _load_bool(loaded, settings, "zero_hr_immediate")
 
     # --- Zóna határok ---
     if isinstance(loaded.get("zone_thresholds"), dict):
@@ -2739,7 +2741,8 @@ async def zone_controller_task(
         if hr_enabled
         else ZoneMode.POWER_ONLY
     )
-    zero_immediate = settings.get("zero_power_immediate", False)
+    zero_power_immediate = settings.get("zero_power_immediate", False)
+    zero_hr_immediate = settings.get("zero_hr_immediate", False)
     power_buf = _resolve_buffer_settings(settings, "power")
     hr_buf = _resolve_buffer_settings(settings, "hr")
     power_dropout_timeout = power_buf["dropout_timeout"]
@@ -2781,8 +2784,14 @@ async def zone_controller_task(
         if final_zone is None:
             continue  # Nincs elég friss adat a döntéshez
 
+        # Azonnali leállás flag (zero_power_immediate / zero_hr_immediate)
+        use_zero_immediate = (
+            (zero_power_immediate and power_zone is not None and power_zone == 0 and power_fresh)
+            or (zero_hr_immediate and hr_zone is not None and hr_zone == 0 and hr_fresh)
+        )
+
         # Cooldown logika alkalmazása
-        zone_to_send = cooldown_ctrl.process(current_zone, final_zone, zero_immediate)
+        zone_to_send = cooldown_ctrl.process(current_zone, final_zone, use_zero_immediate)
 
         if zone_to_send is not None:
             async with state.lock:
@@ -3086,7 +3095,8 @@ class FanController:
 
         print(
             f"Cooldown: {s['cooldown_seconds']}s  |  "
-            f"0W azonnali: {'Igen' if s['zero_power_immediate'] else 'Nem'}"
+            f"0W azonnali: {'Igen' if s['zero_power_immediate'] else 'Nem'}  |  "
+            f"0HR azonnali: {'Igen' if s['zero_hr_immediate'] else 'Nem'}"
         )
         ble_fan_name = s["ble"]["device_name"]
         if ble_fan_name:
@@ -3541,6 +3551,7 @@ class HUDWindow:
         tile_frame.bind("<B1-Motion>", self._on_drag_move)
 
         self._tile_zero_imm     = self._make_tile(tile_frame, "ZRO IMM")
+        self._tile_zero_hr_imm  = self._make_tile(tile_frame, "ZHR IMM")
         self._tile_higher_wins  = self._make_tile(tile_frame, "HI WINS")
         self._tile_ant          = self._make_tile(tile_frame, "ANT+")
         self._tile_ble          = self._make_tile(tile_frame, "BLE")
@@ -4129,6 +4140,10 @@ class HUDWindow:
             zpi = self._ctrl.settings.get("zero_power_immediate", False)
             self._tile_zero_imm.config(bg=self.LCARS_CYAN if zpi else self.TEXT_DIM)
 
+            # zero_hr_immediate
+            zhi = self._ctrl.settings.get("zero_hr_immediate", False)
+            self._tile_zero_hr_imm.config(bg=self.LCARS_CYAN if zhi else self.TEXT_DIM)
+
             # higher_wins
             zone_mode_val = self._ctrl.settings["heart_rate_zones"].get(
                 "zone_mode", ZoneMode.POWER_ONLY
@@ -4192,7 +4207,7 @@ class HUDWindow:
         # ── Állapot csík (tile-ok) ──
         tile_size = max(6, int(7 * s))
         for tile in (
-            self._tile_zero_imm, self._tile_higher_wins,
+            self._tile_zero_imm, self._tile_zero_hr_imm, self._tile_higher_wins,
             self._tile_ant, self._tile_ble, self._tile_cooldown,
         ):
             tile.config(font=(ff, tile_size, "bold"))
