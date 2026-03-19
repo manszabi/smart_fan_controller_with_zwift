@@ -52,17 +52,27 @@ if exist "zwift_api_settings.json" (
     copy zwift_api_settings.json "dist\SmartFanController\zwift_api_settings.json" >nul
     echo [OK] zwift_api_settings.json masolva
 )
+if exist "zwift_udp_monitor_setting.json" (
+    copy zwift_udp_monitor_setting.json "dist\SmartFanController\zwift_udp_monitor_setting.json" >nul
+    echo [OK] zwift_udp_monitor_setting.json masolva
+)
 
 echo.
 echo ========================================
 echo  Build kesz!
 echo ========================================
 echo.
-echo Az exe itt talalhato:
+echo Az exe-k itt talalhatok:
 echo   dist\SmartFanController\SmartFanController.exe
+echo   dist\SmartFanController\zwift_api_polling.exe
+echo   dist\SmartFanController\zwift_udp_monitor.exe
 echo.
 echo A teljes dist\SmartFanController mappat masold oda,
 echo ahol hasznalni szeretned. A settings.json-t szerkeszd
 echo a sajat beallitasaiddal.
+echo.
+echo MEGJEGYZES: Ha zwiftudp_sources: "zwift_udp_monitor" van beallitva,
+echo             a program automatikusan atvalt zwift_api_polling-ra,
+echo             ha zwiftudp_sources_timeout masodpercig nem erkezik adat.
 echo.
 pause
