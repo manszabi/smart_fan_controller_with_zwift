@@ -67,6 +67,11 @@ if not exist "settings.json" (
     copy settings.example.json settings.json >nul 2>&1
     if exist "settings.json" (
         echo [OK] settings.json letrehozva - szerkeszd a sajat beallitasaiddal!
+        echo      Zwift UDP forrashoz allitsd be a zwiftudp_sources mezot:
+        echo        "zwift_api_polling"  - Zwift HTTPS API (bejelentkezes szukseges)
+        echo        "zwift_udp_monitor"  - Zwift Companion App UDP (automatikus
+        echo                              fallback zwift_api_polling-ra, ha nem
+        echo                              erkezik adat zwiftudp_sources_timeout mp-ig)
     ) else (
         echo [FIGYELEM] Nem sikerult masolni. Hozd letre manuálisan a settings.json-t!
     )
