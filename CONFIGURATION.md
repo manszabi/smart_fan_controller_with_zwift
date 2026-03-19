@@ -134,7 +134,7 @@ A program automatikusan elindítja a `zwift_api_polling.py` scriptet ha Zwift UD
 
 ---
 
-## Szívfrekvencia zónák (`power_zones.heart_rate_zones`)
+## Szívfrekvencia zónák (`heart_rate_zones`)
 
 | Mező | Típus | Tartomány | Alapértelmezett | Leírás |
 |------|-------|-----------|-----------------|--------|

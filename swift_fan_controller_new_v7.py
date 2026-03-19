@@ -135,17 +135,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "z1_max_percent": 60,
         "z2_max_percent": 89,
         "zero_power_immediate": False,
-        "heart_rate_zones": {
-            "enabled": False,
-            "max_hr": 185,
-            "resting_hr": 60,
-            "zone_mode": ZoneMode.POWER_ONLY,
-            "z1_max_percent": 70,
-            "z2_max_percent": 80,
-            "valid_min_hr": 30,
-            "valid_max_hr": 220,
-            "zero_hr_immediate": False,
-        },
     },
     "ble": {
         "device_name": None,
@@ -189,6 +178,17 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "ble_hr_max_retries": 10,
         "zwift_udp_port": 7878,
         "zwift_udp_host": "127.0.0.1",
+    },
+    "heart_rate_zones": {
+        "enabled": False,
+        "max_hr": 185,
+        "resting_hr": 60,
+        "zone_mode": ZoneMode.POWER_ONLY,
+        "z1_max_percent": 70,
+        "z2_max_percent": 80,
+        "valid_min_hr": 30,
+        "valid_max_hr": 220,
+        "zero_hr_immediate": False,
     },
 }
 
@@ -245,20 +245,6 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
         _load_int(pz, settings["power_zones"], "z1_max_percent", 1, 100)
         _load_int(pz, settings["power_zones"], "z2_max_percent", 1, 100)
         _load_bool(pz, settings["power_zones"], "zero_power_immediate")
-
-        # --- Szívfrekvencia zóna beállítások ---
-        if isinstance(pz.get("heart_rate_zones"), dict):
-            hrz = pz["heart_rate_zones"]
-            _load_bool(hrz, settings["power_zones"]["heart_rate_zones"], "enabled")
-            _load_int(hrz, settings["power_zones"]["heart_rate_zones"], "max_hr", 100, 220)
-            _load_int(hrz, settings["power_zones"]["heart_rate_zones"], "resting_hr", 30, 100)
-            if hrz.get("zone_mode") in VALID_ZONE_MODES:
-                settings["power_zones"]["heart_rate_zones"]["zone_mode"] = hrz["zone_mode"]
-            _load_int(hrz, settings["power_zones"]["heart_rate_zones"], "valid_min_hr", 30, 100)
-            _load_int(hrz, settings["power_zones"]["heart_rate_zones"], "valid_max_hr", 150, 300)
-            _load_int(hrz, settings["power_zones"]["heart_rate_zones"], "z1_max_percent", 1, 100)
-            _load_int(hrz, settings["power_zones"]["heart_rate_zones"], "z2_max_percent", 1, 100)
-            _load_bool(hrz, settings["power_zones"]["heart_rate_zones"], "zero_hr_immediate")
 
     # --- BLE kimeneti beállítások ---
     if isinstance(loaded.get("ble"), dict):
@@ -344,6 +330,20 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
             _load_int(ds, settings["datasource"], f"{prefix}_buffer_rate_hz", 1, 60)
             _load_int(ds, settings["datasource"], f"{prefix}_dropout_timeout", 1, 300)
 
+    # --- Szívfrekvencia zóna beállítások ---
+    if isinstance(loaded.get("heart_rate_zones"), dict):
+        hrz = loaded["heart_rate_zones"]
+        _load_bool(hrz, settings["heart_rate_zones"], "enabled")
+        _load_int(hrz, settings["heart_rate_zones"], "max_hr", 100, 220)
+        _load_int(hrz, settings["heart_rate_zones"], "resting_hr", 30, 100)
+        if hrz.get("zone_mode") in VALID_ZONE_MODES:
+            settings["heart_rate_zones"]["zone_mode"] = hrz["zone_mode"]
+        _load_int(hrz, settings["heart_rate_zones"], "valid_min_hr", 30, 100)
+        _load_int(hrz, settings["heart_rate_zones"], "valid_max_hr", 150, 300)
+        _load_int(hrz, settings["heart_rate_zones"], "z1_max_percent", 1, 100)
+        _load_int(hrz, settings["heart_rate_zones"], "z2_max_percent", 1, 100)
+        _load_bool(hrz, settings["heart_rate_zones"], "zero_hr_immediate")
+
     # --- Kereszt-validációk ---
 
     # 1) Forrás-specifikus minimum_samples <= buffer_seconds * buffer_rate_hz
@@ -420,7 +420,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 4) HR zónák: z1_max_percent < z2_max_percent és resting_hr < max_hr
     try:
-        hrz = settings["power_zones"].get("heart_rate_zones") or {}
+        hrz = settings.get("heart_rate_zones") or {}
         z1p = hrz.get("z1_max_percent")
         z2p = hrz.get("z2_max_percent")
         if isinstance(z1p, int) and isinstance(z2p, int):
@@ -450,7 +450,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
 
     # 5) valid_min_hr < valid_max_hr
     try:
-        hrz = settings["power_zones"].get("heart_rate_zones") or {}
+        hrz = settings.get("heart_rate_zones") or {}
         valid_min = hrz.get("valid_min_hr")
         valid_max = hrz.get("valid_max_hr")
         if isinstance(valid_min, int) and isinstance(valid_max, int):
@@ -459,10 +459,10 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
                     f"⚠ valid_min_hr ({valid_min}) >= valid_max_hr ({valid_max}), "
                     f"alapértelmezés visszaállítva."
                 )
-                hrz["valid_min_hr"] = DEFAULT_SETTINGS["power_zones"]["heart_rate_zones"][
+                hrz["valid_min_hr"] = DEFAULT_SETTINGS["heart_rate_zones"][
                     "valid_min_hr"
                 ]
-                hrz["valid_max_hr"] = DEFAULT_SETTINGS["power_zones"]["heart_rate_zones"][
+                hrz["valid_max_hr"] = DEFAULT_SETTINGS["heart_rate_zones"][
                     "valid_max_hr"
                 ]
     except Exception as exc:
@@ -1857,7 +1857,7 @@ class ANTPlusInputHandler:
     ) -> None:
         self.settings = settings
         self.ds = settings["datasource"]
-        self.hr_enabled = settings["power_zones"].get("heart_rate_zones", {}).get("enabled", False)
+        self.hr_enabled = settings.get("heart_rate_zones", {}).get("enabled", False)
         self.power_queue = power_queue
         self.hr_queue = hr_queue
         self.loop = loop
@@ -2425,7 +2425,7 @@ class ZwiftUDPInputHandler:
         self.hr_queue = hr_queue
 
         self.process_power: bool = ds.get("power_source") == DataSource.ZWIFTUDP
-        hr_enabled = settings["power_zones"].get("heart_rate_zones", {}).get("enabled", False)
+        hr_enabled = settings.get("heart_rate_zones", {}).get("enabled", False)
         self.process_hr: bool = ds.get("hr_source") == DataSource.ZWIFTUDP and hr_enabled
 
         self._transport: Any = None
@@ -2499,7 +2499,7 @@ class ZwiftUDPInputHandler:
                 logger.debug(f"Zwift UDP: érvénytelen power: {p}")
 
         if self.process_hr and "heartrate" in data:
-            hrz = self.settings["power_zones"].get("heart_rate_zones", {})
+            hrz = self.settings.get("heart_rate_zones", {})
             valid_min_hr: int = hrz.get("valid_min_hr", 30)
             valid_max_hr: int = hrz.get("valid_max_hr", 220)
 
@@ -2549,9 +2549,9 @@ async def power_processor_task(
     """
     min_watt = settings["power_zones"]["min_watt"]
     max_watt = settings["power_zones"]["max_watt"]
-    hr_enabled = settings["power_zones"].get("heart_rate_zones", {}).get("enabled", False)
+    hr_enabled = settings.get("heart_rate_zones", {}).get("enabled", False)
     zone_mode = (
-        settings["power_zones"]["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
+        settings["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
         if hr_enabled
         else ZoneMode.POWER_ONLY
     )
@@ -2639,10 +2639,10 @@ async def hr_processor_task(
         settings: Betöltött beállítások dict-je.
         hr_zones: Kiszámított HR zóna határok.
     """
-    hrz = settings["power_zones"].get("heart_rate_zones", {})
-    hr_enabled = settings["power_zones"].get("heart_rate_zones", {}).get("enabled", False)
+    hrz = settings.get("heart_rate_zones", {})
+    hr_enabled = settings.get("heart_rate_zones", {}).get("enabled", False)
     zone_mode = (
-        settings["power_zones"]["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
+        settings["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
         if hr_enabled
         else ZoneMode.POWER_ONLY
     )
@@ -2740,14 +2740,14 @@ async def zone_controller_task(
         settings: Betöltött beállítások dict-je.
         zone_event: asyncio.Event – jelzi, hogy új adat érkezett.
     """
-    hr_enabled = settings["power_zones"].get("heart_rate_zones", {}).get("enabled", False)
+    hr_enabled = settings.get("heart_rate_zones", {}).get("enabled", False)
     zone_mode = (
-        settings["power_zones"]["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
+        settings["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
         if hr_enabled
         else ZoneMode.POWER_ONLY
     )
     zero_power_immediate = settings["power_zones"].get("zero_power_immediate", False)
-    zero_hr_immediate = settings["power_zones"]["heart_rate_zones"].get("zero_hr_immediate", False)
+    zero_hr_immediate = settings["heart_rate_zones"].get("zero_hr_immediate", False)
     power_buf = _resolve_buffer_settings(settings, "power")
     hr_buf = _resolve_buffer_settings(settings, "hr")
     power_dropout_timeout = power_buf["dropout_timeout"]
@@ -3060,7 +3060,7 @@ class FanController:
         """Kiírja az indítási konfigurációs összefoglalót."""
         s = self.settings
         ds = s["datasource"]
-        hrz = s["power_zones"].get("heart_rate_zones", {})
+        hrz = s.get("heart_rate_zones", {})
 
         power_buf = _resolve_buffer_settings(s, "power")
         hr_buf = _resolve_buffer_settings(s, "hr")
@@ -3101,7 +3101,7 @@ class FanController:
         print(
             f"Cooldown: {s['global_settings']['cooldown_seconds']}s  |  "
             f"0W azonnali: {'Igen' if s['power_zones'].get('zero_power_immediate', False) else 'Nem'}  |  "
-            f"0HR azonnali: {'Igen' if s['power_zones']['heart_rate_zones'].get('zero_hr_immediate', False) else 'Nem'}"
+            f"0HR azonnali: {'Igen' if s['heart_rate_zones'].get('zero_hr_immediate', False) else 'Nem'}"
         )
         ble_fan_name = s["ble"]["device_name"]
         if ble_fan_name:
@@ -3125,9 +3125,9 @@ class FanController:
         self._tasks = []
         s = self.settings
         ds = s["datasource"]
-        hr_enabled = s["power_zones"].get("heart_rate_zones", {}).get("enabled", False)
+        hr_enabled = s.get("heart_rate_zones", {}).get("enabled", False)
         if hr_enabled:
-            zone_mode = s["power_zones"]["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
+            zone_mode = s["heart_rate_zones"].get("zone_mode", ZoneMode.POWER_ONLY)
         else:
             zone_mode = ZoneMode.POWER_ONLY
 
@@ -3141,10 +3141,10 @@ class FanController:
         )
         hr_zones = (
             calculate_hr_zones(
-                s["power_zones"]["heart_rate_zones"]["max_hr"],
-                s["power_zones"]["heart_rate_zones"]["resting_hr"],
-                s["power_zones"]["heart_rate_zones"]["z1_max_percent"],
-                s["power_zones"]["heart_rate_zones"]["z2_max_percent"],
+                s["heart_rate_zones"]["max_hr"],
+                s["heart_rate_zones"]["resting_hr"],
+                s["heart_rate_zones"]["z1_max_percent"],
+                s["heart_rate_zones"]["z2_max_percent"],
             )
             if hr_enabled
             else {"resting": 60, "z1_max": 130, "z2_max": 148}
@@ -4146,11 +4146,11 @@ class HUDWindow:
             self._tile_zero_imm.config(bg=self.LCARS_CYAN if zpi else self.TEXT_DIM)
 
             # zero_hr_immediate
-            zhi = self._ctrl.settings["power_zones"]["heart_rate_zones"].get("zero_hr_immediate", False)
+            zhi = self._ctrl.settings["heart_rate_zones"].get("zero_hr_immediate", False)
             self._tile_zero_hr_imm.config(bg=self.LCARS_CYAN if zhi else self.TEXT_DIM)
 
             # higher_wins
-            zone_mode_val = self._ctrl.settings["power_zones"]["heart_rate_zones"].get(
+            zone_mode_val = self._ctrl.settings["heart_rate_zones"].get(
                 "zone_mode", ZoneMode.POWER_ONLY
             )
             hw = (zone_mode_val == ZoneMode.HIGHER_WINS)

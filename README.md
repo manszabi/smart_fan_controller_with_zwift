@@ -77,7 +77,7 @@ Röviden a `settings.json` fő szekciói:
 | `power_zones` | FTP, watt tartomány, zóna százalékok, 0W azonnali leállás |
 | `ble` | ESP32 ventilátor vezérlő (kimenet) |
 | `datasource` | Adatforrás kiválasztás, ANT+/BLE/Zwift specifikus beállítások |
-| `power_zones.heart_rate_zones` | HR zónák, zone_mode (power_only/hr_only/higher_wins) |
+| `heart_rate_zones` | HR zónák, zone_mode (power_only/hr_only/higher_wins) |
 
 Kommentezett referencia: `settings.example.jsonc`
 
@@ -87,14 +87,15 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "power_zones": {
-    "ftp": 200,
-    "heart_rate_zones": { "enabled": true, "zone_mode": "higher_wins" }
-  },
+  "power_zones": { "ftp": 200 },
   "ble": { "device_name": "FanController" },
   "datasource": {
     "power_source": "antplus",
     "hr_source": "antplus"
+  },
+  "heart_rate_zones": {
+    "enabled": true,
+    "zone_mode": "higher_wins"
   }
 }
 ```
@@ -103,14 +104,15 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "power_zones": {
-    "ftp": 250,
-    "heart_rate_zones": { "enabled": true, "zone_mode": "higher_wins" }
-  },
+  "power_zones": { "ftp": 250 },
   "ble": { "device_name": null },
   "datasource": {
     "power_source": "ble",
     "hr_source": "ble"
+  },
+  "heart_rate_zones": {
+    "enabled": true,
+    "zone_mode": "higher_wins"
   }
 }
 ```
@@ -119,14 +121,15 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "power_zones": {
-    "ftp": 180,
-    "heart_rate_zones": { "enabled": true, "zone_mode": "higher_wins" }
-  },
+  "power_zones": { "ftp": 180 },
   "ble": { "device_name": "FanController", "pin_code": 123456 },
   "datasource": {
     "power_source": "zwiftudp",
     "hr_source": "ble"
+  },
+  "heart_rate_zones": {
+    "enabled": true,
+    "zone_mode": "higher_wins"
   }
 }
 ```
@@ -135,12 +138,12 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ```json
 {
-  "power_zones": {
-    "ftp": 200,
-    "heart_rate_zones": { "enabled": false }
-  },
+  "power_zones": { "ftp": 200 },
   "datasource": {
     "power_source": "antplus"
+  },
+  "heart_rate_zones": {
+    "enabled": false
   }
 }
 ```
