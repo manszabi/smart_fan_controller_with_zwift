@@ -137,6 +137,8 @@ Kommentezett referencia: `settings.example.jsonc`
 
 ### Zwift power + BLE HR → BLE ventilátor (UDP monitor, bejelentkezés nélkül)
 
+Ha a Zwift Companion App (ZCA) 30 másodpercig nem küld adatot, automatikusan átváltódik `zwift_api_polling`-ra.
+
 ```json
 {
   "power_zones": { "ftp": 180 },
@@ -144,7 +146,8 @@ Kommentezett referencia: `settings.example.jsonc`
   "datasource": {
     "power_source": "zwiftudp",
     "hr_source": "ble",
-    "zwiftudp_sources": "zwift_udp_monitor"
+    "zwiftudp_sources": "zwift_udp_monitor",
+    "zwiftudp_sources_timeout": 30
   },
   "heart_rate_zones": {
     "enabled": true,
@@ -185,6 +188,7 @@ main()
 │   ├── BLEPowerInput*       – BLE notification → raw_power_queue
 │   ├── BLEHRInput*          – BLE notification → raw_hr_queue
 │   ├── ZwiftUDPInput*       – UDP JSON → raw_power_queue / raw_hr_queue
+│   ├── ZwiftUDPWatchdog*    – timeout → zwift_udp_monitor leállítás + api_polling fallback
 │   ├── PowerProcessor       – raw_power_queue → átlag → zóna → zone_event
 │   ├── HRProcessor          – raw_hr_queue → átlag → zóna → zone_event
 │   ├── ZoneController       – zone_event → cooldown → zone_queue
