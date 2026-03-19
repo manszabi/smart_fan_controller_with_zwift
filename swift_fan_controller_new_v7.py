@@ -196,6 +196,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "zwift_udp_port": 7878,
         "zwift_udp_host": "127.0.0.1",
         "zwiftudp_sources": ZwiftUDPSource.API_POLLING,
+        "zwiftudp_sources_timeout": 30,
     },
 }
 
@@ -332,6 +333,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
         _load_int(ds, settings["datasource"], "zwift_udp_port", 1024, 65535)
         if ds.get("zwiftudp_sources") in VALID_ZWIFTUDP_SOURCES:
             settings["datasource"]["zwiftudp_sources"] = ds["zwiftudp_sources"]
+        _load_int(ds, settings["datasource"], "zwiftudp_sources_timeout", 5, 300)
 
         for prefix in ("BLE", "ANT", "zwiftUDP"):
             _load_int(ds, settings["datasource"], f"{prefix}_buffer_seconds", 1, 60)
@@ -3052,6 +3054,7 @@ class FanController:
         self._tasks: list[asyncio.Task[Any]] = []
         self._running = True
         self._zwift_proc: Optional[subprocess.Popen[Any]] = None
+        self._zwift_switched_to_api: bool = False  # UDP→API fallback történt-e
         # Handler ref-ek (HUD és leállítás számára)
         self._ble_fan: Optional[BLEFanOutputController] = None
         self._ble_power: Optional[BLEPowerInputHandler] = None
@@ -3084,6 +3087,93 @@ class FanController:
             f"hr_src={ds.get('hr_source')}, "
             f"tasks={len(self._tasks)})"
         )
+
+    def _start_zwift_subprocess(self, script_name: str) -> None:
+        """Elindít egy Zwift subprocess-t (zwift_udp_monitor vagy zwift_api_polling).
+
+        Leállítja az esetlegesen még futó előző folyamatot, majd elindítja
+        az újat. Az eredményt self._zwift_proc tartalmazza.
+        """
+        # Esetleges előző process leállítása
+        if self._zwift_proc is not None and self._zwift_proc.poll() is None:
+            try:
+                self._zwift_proc.terminate()
+                self._zwift_proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                self._zwift_proc.kill()
+            except OSError:
+                pass
+            finally:
+                self._zwift_proc = None
+
+        try:
+            if getattr(sys, "frozen", False):
+                exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+                cmd = [os.path.join(exe_dir, f"{script_name}.exe")]
+            else:
+                monitor_script = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), f"{script_name}.py"
+                )
+                cmd = [sys.executable, monitor_script]
+
+            if _platform.system() == "Windows":
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = 4  # SW_SHOWNOACTIVATE
+                creation_flags = subprocess.CREATE_NEW_CONSOLE
+            else:
+                startupinfo = None
+                creation_flags = 0
+
+            popen_kwargs: Dict[str, Any] = dict(
+                stdin=subprocess.DEVNULL,
+                creationflags=creation_flags,
+            )
+            if startupinfo is not None:
+                popen_kwargs["startupinfo"] = startupinfo
+            else:
+                popen_kwargs["close_fds"] = True
+
+            self._zwift_proc = subprocess.Popen(cmd, **popen_kwargs)
+            logger.info(f"{script_name}.py elindítva (PID: {self._zwift_proc.pid})")
+
+        except FileNotFoundError as exc:
+            logger.error(f"{script_name}.py nem található: {exc}")
+        except OSError as exc:
+            logger.error(f"{script_name}.py indítása sikertelen: {exc}")
+        except Exception as exc:
+            logger.error(f"Váratlan hiba {script_name}.py indításakor: {exc}")
+
+    async def _zwift_udp_watchdog_task(
+        self,
+        zwift_handler: "ZwiftUDPInputHandler",
+        timeout_sec: int,
+    ) -> None:
+        """Figyeli, hogy a zwift_udp_monitor.py küld-e adatot.
+
+        Ha `timeout_sec` másodpercig nem érkezik érvényes csomag, leállítja
+        a zwift_udp_monitor.py-t és elindítja a zwift_api_polling.py-t
+        fallback forrásként. A feladat ezután befejezi magát (egyszeri váltás).
+        """
+        watchdog_start = time.monotonic()
+        while True:
+            await asyncio.sleep(1)
+            if not self._running:
+                return
+            now = time.monotonic()
+            last = zwift_handler.last_packet_time
+            # Referencia időpont: watchdog indulása vagy utolsó csomag, amelyik késõbb volt
+            effective_last = last if last > 0.0 else watchdog_start
+            if (now - effective_last) >= timeout_sec:
+                msg = (
+                    f"zwift_udp_monitor.py nem küldött adatot {timeout_sec}s-ig – "
+                    "fallback: zwift_api_polling.py indítása"
+                )
+                logger.error(msg)
+                print(f"\n[HIBA] {msg}")
+                self._zwift_switched_to_api = True
+                self._start_zwift_subprocess("zwift_api_polling")
+                return  # watchdog befejezi magát, az api_polling dropout kezelés veszi át
 
     def print_startup_info(self) -> None:
         """Kiírja az indítási konfigurációs összefoglalót."""
@@ -3271,47 +3361,8 @@ class FanController:
             else:
                 script_name = "zwift_api_polling"
 
-            # Subprocess indítása – platform-specifikus kezelés
-            try:
-                if getattr(sys, 'frozen', False):
-                    # PyInstaller frozen exe: a script .exe az exe mellett
-                    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-                    cmd = [os.path.join(exe_dir, f"{script_name}.exe")]
-                else:
-                    monitor_script = os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)), f"{script_name}.py"
-                    )
-                    cmd = [sys.executable, monitor_script]
-
-                if _platform.system() == "Windows":
-                    startupinfo = subprocess.STARTUPINFO()
-                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                    startupinfo.wShowWindow = 4  # SW_SHOWNOACTIVATE
-                    creation_flags = subprocess.CREATE_NEW_CONSOLE
-                else:
-                    startupinfo = None
-                    creation_flags = 0
-
-                popen_kwargs: Dict[str, Any] = dict(
-                    stdin=subprocess.DEVNULL,
-                    creationflags=creation_flags,
-                )
-                if startupinfo is not None:
-                    popen_kwargs["startupinfo"] = startupinfo
-                else:
-                    popen_kwargs["close_fds"] = True
-
-                self._zwift_proc = subprocess.Popen(cmd, **popen_kwargs)
-
-                msg = f"{script_name}.py elindítva (PID: {self._zwift_proc.pid})"
-                logger.info(msg)
-
-            except FileNotFoundError as exc:
-                logger.error(f"{script_name}.py nem található: {exc}")
-            except OSError as exc:
-                logger.error(f"{script_name}.py indítása sikertelen: {exc}")
-            except Exception as exc:
-                logger.error(f"Váratlan hiba {script_name}.py indításakor: {exc}")
+            # Subprocess indítása a segédmetódussal
+            self._start_zwift_subprocess(script_name)
 
             # UDP handler mindig létrejön, függetlenül a subprocess sikerétől
             zwiftudp = ZwiftUDPInputHandler(s, raw_power_queue, raw_hr_queue)
@@ -3328,6 +3379,16 @@ class FanController:
                     name="ZwiftUDPInput",
                 )
             )
+
+            # Ha UDP_MONITOR a forrás, elindítjuk a watchdog taskot
+            if zwift_src == ZwiftUDPSource.UDP_MONITOR:
+                udp_timeout = ds.get("zwiftudp_sources_timeout", 30)
+                self._tasks.append(
+                    asyncio.create_task(
+                        self._zwift_udp_watchdog_task(zwiftudp, udp_timeout),
+                        name="ZwiftUDPWatchdog",
+                    )
+                )
 
         needs_antplus = (power_source == DataSource.ANTPLUS) or (
             hr_source == DataSource.ANTPLUS and hr_enabled
