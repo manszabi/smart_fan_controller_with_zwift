@@ -24,7 +24,7 @@ import sys
 import time
 import threading
 
-from typing import Any
+from typing import Any, cast
 
 import requests
 
@@ -349,8 +349,8 @@ class ZwiftAPIClient:
                 )
 
         if activities:
-            latest = activities[0] if isinstance(activities, list) else activities
-            world_id = latest.get("worldId") or latest.get("world_id")
+            latest: Any = activities[0] if isinstance(activities, list) else activities
+            world_id: Any = latest.get("worldId") or latest.get("world_id")
             if world_id:
                 return world_id
 
@@ -373,10 +373,11 @@ class ZwiftAPIClient:
                         f"\n[DEBUG] Response bytes[:64]: {resp.content[:64]!r}"
                     )
                 return None
-            profile = resp.json()
+            profile: Any = resp.json()
             if not isinstance(profile, dict):
                 return None
-            return profile.get("worldId") or profile.get("world_id") or None
+            prof = cast(dict[str, Any], profile)
+            return prof.get("worldId") or prof.get("world_id") or None
         except (json.JSONDecodeError, requests.RequestException):
             return None
 
