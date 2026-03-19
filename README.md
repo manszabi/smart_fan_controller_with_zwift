@@ -185,12 +185,40 @@ main()
 |------|--------|
 | `swift_fan_controller_new_v7.py` | Fő program |
 | `zwift_api_polling.py` | Zwift API polling script (automatikusan indul) |
+| `esp32_fan_controller.ino` | ESP32 firmware (Arduino – Xiao ESP32-C3) |
 | `settings.json` | Aktív beállítások |
 | `settings.example.json` | Példa beállítások (alapértelmezett értékek) |
 | `settings.example.jsonc` | Kommentezett beállítás referencia |
 | `ble_devices.log` | Talált BLE eszközök (automatikusan generált) |
 | `ant_devices.log` | Talált ANT+ eszközök (automatikusan generált) |
 | `CONFIGURATION.md` | Részletes konfigurációs dokumentáció |
+
+## ESP32 firmware
+
+Az `esp32_fan_controller.ino` a BLE ventilátor vezérlő firmware-je, **Seeed Studio Xiao ESP32-C3** mikrovezérlőre. A Python program ezzel kommunikál BLE-n keresztül.
+
+**Firmware v5.2.0** – főbb jellemzők:
+
+| Paraméter | Érték |
+|-----------|-------|
+| BLE device neve | `FanController` |
+| Service UUID | `0000ffe0-0000-1000-8000-00805f9b34fb` |
+| Characteristic UUID | `0000ffe1-0000-1000-8000-00805f9b34fb` |
+| Alapértelmezett PIN | `123456` |
+| Parancsformátum | `LEVEL:0` – `LEVEL:3` |
+| Deep sleep timeout | 30 perc inaktivitás után |
+| BLE zóna timeout | 10 perc BLE kapcsolat nélkül → LEVEL:0 |
+
+**Zóna–relé megfeleltetés:**
+
+| Zóna | Ventilátor | Relék aktív |
+|------|------------|-------------|
+| 0 | Ki | – |
+| 1 | 33% | FAN1 |
+| 2 | 66% | FAN1 + FAN2 |
+| 3 | 100% | FAN1 + FAN2 + FAN3 |
+
+**Szükséges Arduino könyvtárak:** OneButton, AsyncTCP, ESPAsyncWebServer, WebSerial, ArduinoJson, ElegantOTA.
 
 ## Leállítás
 

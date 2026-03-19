@@ -81,6 +81,8 @@ A program a `settings.json` fájlból olvassa a beállításokat. Ha a fájl nem
 
 Az ESP32 BLE vezérlőhöz való csatlakozás beállításai. A program `LEVEL:N` (N=0–3) parancsokat küld a GATT karakterisztikára.
 
+> **Firmware:** a projekthez tartozó `esp32_fan_controller.ino` (Xiao ESP32-C3, v5.2.0) alapértelmezetten a lenti UUID-kat és `123456` PIN-t használja. Ha az alapértékeket megtartod, csak a `device_name` mezőt kell beállítani (vagy hagyni `null`-on az auto-discoveryhez).
+
 | Mező | Típus | Tartomány | Alapértelmezett | Leírás |
 |------|-------|-----------|-----------------|--------|
 | `device_name` | string/null | – | null | BLE eszköz neve. `null` vagy `""` → auto-discovery. |
@@ -95,7 +97,7 @@ Az ESP32 BLE vezérlőhöz való csatlakozás beállításai. A program `LEVEL:N
 
 **Auto-discovery:** ha `device_name` `null` vagy üres, a program automatikusan megkeresi a `service_uuid`-t hirdető eszközt. A talált eszközök a `ble_devices.log` fájlba kerülnek.
 
-**PIN kód:** megadható int-ként (`123456`) vagy string-ként (`"012345"` ha vezető nulla szükséges). Max 20 karakter.
+**PIN kód:** megadható int-ként (`123456`) vagy string-ként (`"012345"` ha vezető nulla szükséges). Max 20 karakter. Az ESP32 firmware alapértelmezett PIN-je `123456` – ha módosítod az `esp32_fan_controller.ino`-ban (`BLE_AUTH_PIN`), itt is frissítsd.
 
 ---
 
