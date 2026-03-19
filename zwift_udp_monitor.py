@@ -537,7 +537,6 @@ def run_listener(
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         # Bind to all interfaces so broadcast packets from ZCA are received
         # regardless of which network interface the phone uses.
         sock.bind(("0.0.0.0", ZCA_UDP_PORT))
@@ -586,16 +585,17 @@ def run_listener(
                             f"store.rider_id={store.rider_id}"
                         )
                 else:
-                    # Fall back to direct PlayerState parse when S2C wrapper is empty
-                    state = parser.parse_player_state(data)
-                    if ZwiftPacketParser._state_has_data(state):
+                    # Fall back to C2S packet parse (header-skip heuristics + direct
+                    # PlayerState fallback are handled inside parse_outgoing)
+                    state = parser.parse_outgoing(data)
+                    if state:
                         store.update(state)
                         if debug:
-                            print(f"[DEBUG] direct PlayerState: {state!r}")
+                            print(f"[DEBUG] C2S / direct parse: {state!r}")
 
             except Exception as exc:
                 parse_errors += 1
-                if debug or parse_errors <= 3:
+                if debug or parse_errors <= 3 or parse_errors % 100 == 0:
                     print(f"[WARN] parse error #{parse_errors}: {exc!r}")
     finally:
         sock.close()
