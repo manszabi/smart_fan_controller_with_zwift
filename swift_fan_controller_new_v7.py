@@ -136,6 +136,17 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "z2_max_percent": 89,
         "zero_power_immediate": False,
     },
+    "heart_rate_zones": {
+        "enabled": False,
+        "max_hr": 185,
+        "resting_hr": 60,
+        "zone_mode": ZoneMode.POWER_ONLY,
+        "z1_max_percent": 70,
+        "z2_max_percent": 80,
+        "valid_min_hr": 30,
+        "valid_max_hr": 220,
+        "zero_hr_immediate": False,
+    },
     "ble": {
         "device_name": None,
         "scan_timeout": 10,
@@ -178,17 +189,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "ble_hr_max_retries": 10,
         "zwift_udp_port": 7878,
         "zwift_udp_host": "127.0.0.1",
-    },
-    "heart_rate_zones": {
-        "enabled": False,
-        "max_hr": 185,
-        "resting_hr": 60,
-        "zone_mode": ZoneMode.POWER_ONLY,
-        "z1_max_percent": 70,
-        "z2_max_percent": 80,
-        "valid_min_hr": 30,
-        "valid_max_hr": 220,
-        "zero_hr_immediate": False,
     },
 }
 

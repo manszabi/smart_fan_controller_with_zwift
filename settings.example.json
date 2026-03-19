@@ -14,6 +14,17 @@
     "z2_max_percent": 89,
     "zero_power_immediate": false
   },
+  "heart_rate_zones": {
+    "enabled": false,
+    "max_hr": 185,
+    "resting_hr": 60,
+    "zone_mode": "power_only",
+    "z1_max_percent": 70,
+    "z2_max_percent": 80,
+    "valid_min_hr": 30,
+    "valid_max_hr": 220,
+    "zero_hr_immediate": false
+  },
   "ble": {
     "device_name": null,
     "scan_timeout": 10,
@@ -57,15 +68,4 @@
     "zwift_udp_port": 7878,
     "zwift_udp_host": "127.0.0.1"
   },
-  "heart_rate_zones": {
-    "enabled": false,
-    "max_hr": 185,
-    "resting_hr": 60,
-    "zone_mode": "power_only",
-    "z1_max_percent": 70,
-    "z2_max_percent": 80,
-    "valid_min_hr": 30,
-    "valid_max_hr": 220,
-    "zero_hr_immediate": false
-  }
 }

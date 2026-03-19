@@ -48,9 +48,40 @@ A program a `settings.json` fájlból olvassa a beállításokat. Ha a fájl nem
 
 ---
 
+## Szívfrekvencia zónák (`heart_rate_zones`)
+
+| Mező | Típus | Tartomány | Alapértelmezett | Leírás |
+|------|-------|-----------|-----------------|--------|
+| `enabled` | bool | – | false | Ha false, HR adatok csak megjelennek de nem befolyásolják a ventilátort. |
+| `max_hr` | int | 100–220 | 185 | Maximális szívfrekvencia (bpm). |
+| `resting_hr` | int | 30–100 | 60 | Pihenő szívfrekvencia (bpm). |
+| `zone_mode` | string | lásd lent | `"power_only"` | Zóna kombináció módja. |
+| `z1_max_percent` | int | 1–100 | 70 | Z1 felső határ a max_hr %-ában. |
+| `z2_max_percent` | int | 1–100 | 80 | Z2 felső határ a max_hr %-ában. |
+| `valid_min_hr` | int | 30–100 | 30 | Érvényes HR alsó határ szűréshez. |
+| `valid_max_hr` | int | 150–300 | 220 | Érvényes HR felső határ szűréshez. |
+| `zero_hr_immediate` | bool | – | false | Ha true, 0 HR zóna → azonnali LEVEL:0 (cooldown nélkül). |
+
+**Zóna módok:**
+
+- `"power_only"` – csak a teljesítmény zóna dönt (HR figyelmen kívül)
+- `"hr_only"` – csak a HR zóna dönt (power figyelmen kívül)
+- `"higher_wins"` – a kettő közül a magasabb zóna érvényesül
+
+**HR zóna kiosztás:**
+
+- **Z0:** resting_hr alatt
+- **Z1:** resting_hr – max_hr × z1_max_percent%
+- **Z2:** max_hr × z1_max_percent% + 1 – max_hr × z2_max_percent%
+- **Z3:** max_hr × z2_max_percent% felett
+
+---
+
 ## BLE ventilátor kimenet (`ble`)
 
 Az ESP32 BLE vezérlőhöz való csatlakozás beállításai. A program `LEVEL:N` (N=0–3) parancsokat küld a GATT karakterisztikára.
+
+> **Firmware:** a projekthez tartozó `esp32_fan_controller.ino` (Xiao ESP32-C3, v5.2.0) alapértelmezetten a lenti UUID-kat és `123456` PIN-t használja. Ha az alapértékeket megtartod, csak a `device_name` mezőt kell beállítani (vagy hagyni `null`-on az auto-discoveryhez).
 
 | Mező | Típus | Tartomány | Alapértelmezett | Leírás |
 |------|-------|-----------|-----------------|--------|
@@ -66,7 +97,7 @@ Az ESP32 BLE vezérlőhöz való csatlakozás beállításai. A program `LEVEL:N
 
 **Auto-discovery:** ha `device_name` `null` vagy üres, a program automatikusan megkeresi a `service_uuid`-t hirdető eszközt. A talált eszközök a `ble_devices.log` fájlba kerülnek.
 
-**PIN kód:** megadható int-ként (`123456`) vagy string-ként (`"012345"` ha vezető nulla szükséges). Max 20 karakter.
+**PIN kód:** megadható int-ként (`123456`) vagy string-ként (`"012345"` ha vezető nulla szükséges). Max 20 karakter. Az ESP32 firmware alapértelmezett PIN-je `123456` – ha módosítod az `esp32_fan_controller.ino`-ban (`BLE_AUTH_PIN`), itt is frissítsd.
 
 ---
 
@@ -131,34 +162,6 @@ Minden forrásnak saját buffer paraméterei vannak. Ha nincs megadva, a globál
 | `zwift_udp_host` | string | – | `"127.0.0.1"` | UDP host (localhost). |
 
 A program automatikusan elindítja a `zwift_api_polling.py` scriptet ha Zwift UDP forrás van beállítva.
-
----
-
-## Szívfrekvencia zónák (`heart_rate_zones`)
-
-| Mező | Típus | Tartomány | Alapértelmezett | Leírás |
-|------|-------|-----------|-----------------|--------|
-| `enabled` | bool | – | false | Ha false, HR adatok csak megjelennek de nem befolyásolják a ventilátort. |
-| `max_hr` | int | 100–220 | 185 | Maximális szívfrekvencia (bpm). |
-| `resting_hr` | int | 30–100 | 60 | Pihenő szívfrekvencia (bpm). |
-| `zone_mode` | string | lásd lent | `"power_only"` | Zóna kombináció módja. |
-| `z1_max_percent` | int | 1–100 | 70 | Z1 felső határ a max_hr %-ában. |
-| `z2_max_percent` | int | 1–100 | 80 | Z2 felső határ a max_hr %-ában. |
-| `valid_min_hr` | int | 30–100 | 30 | Érvényes HR alsó határ szűréshez. |
-| `valid_max_hr` | int | 150–300 | 220 | Érvényes HR felső határ szűréshez. |
-
-**Zóna módok:**
-
-- `"power_only"` – csak a teljesítmény zóna dönt (HR figyelmen kívül)
-- `"hr_only"` – csak a HR zóna dönt (power figyelmen kívül)
-- `"higher_wins"` – a kettő közül a magasabb zóna érvényesül
-
-**HR zóna kiosztás:**
-
-- **Z0:** resting_hr alatt
-- **Z1:** resting_hr – max_hr × z1_max_percent%
-- **Z2:** max_hr × z1_max_percent% + 1 – max_hr × z2_max_percent%
-- **Z3:** max_hr × z2_max_percent% felett
 
 ---
 
