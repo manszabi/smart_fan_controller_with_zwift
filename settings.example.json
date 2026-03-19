@@ -65,6 +65,7 @@
     "ble_hr_scan_timeout": 10,
     "ble_hr_reconnect_interval": 5,
     "ble_hr_max_retries": 10,
+    "zwiftudp_sources": "zwift_api_polling",
     "zwift_udp_port": 7878,
     "zwift_udp_host": "127.0.0.1"
   },
