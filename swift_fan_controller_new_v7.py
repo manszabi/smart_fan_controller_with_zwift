@@ -66,6 +66,12 @@ class ZoneMode(str, enum.Enum):
 VALID_DATA_SOURCES: tuple[DataSource, ...] = tuple(DataSource)
 VALID_ZONE_MODES: tuple[ZoneMode, ...] = tuple(ZoneMode)
 
+class ZwiftUDPSource(str, enum.Enum):
+    API_POLLING = "zwift_api_polling"
+    UDP_MONITOR = "zwift_udp_monitor"
+
+VALID_ZWIFTUDP_SOURCES: tuple[ZwiftUDPSource, ...] = tuple(ZwiftUDPSource)
+
 Node: Any = None
 ANTPLUS_NETWORK_KEY: Any = None  # type: ignore[reportConstantRedefinition]
 PowerMeter: Any = None
@@ -189,6 +195,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "ble_hr_max_retries": 10,
         "zwift_udp_port": 7878,
         "zwift_udp_host": "127.0.0.1",
+        "zwiftudp_sources": ZwiftUDPSource.API_POLLING,
     },
 }
 
@@ -323,6 +330,8 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
         if isinstance(ds.get("zwift_udp_host"), str) and ds["zwift_udp_host"]:
             settings["datasource"]["zwift_udp_host"] = ds["zwift_udp_host"]
         _load_int(ds, settings["datasource"], "zwift_udp_port", 1024, 65535)
+        if ds.get("zwiftudp_sources") in VALID_ZWIFTUDP_SOURCES:
+            settings["datasource"]["zwiftudp_sources"] = ds["zwiftudp_sources"]
 
         for prefix in ("BLE", "ANT", "zwiftUDP"):
             _load_int(ds, settings["datasource"], f"{prefix}_buffer_seconds", 1, 60)
@@ -3255,15 +3264,22 @@ class FanController:
             hr_source == DataSource.ZWIFTUDP and hr_enabled
         )
         if needs_zwift:
+            # A használandó Zwift adatforrás script kiválasztása
+            zwift_src = ds.get("zwiftudp_sources", ZwiftUDPSource.API_POLLING)
+            if zwift_src == ZwiftUDPSource.UDP_MONITOR:
+                script_name = "zwift_udp_monitor"
+            else:
+                script_name = "zwift_api_polling"
+
             # Subprocess indítása – platform-specifikus kezelés
             try:
                 if getattr(sys, 'frozen', False):
-                    # PyInstaller frozen exe: zwift_api_polling.exe az exe mellett
+                    # PyInstaller frozen exe: a script .exe az exe mellett
                     exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-                    cmd = [os.path.join(exe_dir, "zwift_api_polling.exe")]
+                    cmd = [os.path.join(exe_dir, f"{script_name}.exe")]
                 else:
                     monitor_script = os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)), "zwift_api_polling.py"
+                        os.path.dirname(os.path.abspath(__file__)), f"{script_name}.py"
                     )
                     cmd = [sys.executable, monitor_script]
 
@@ -3287,15 +3303,15 @@ class FanController:
 
                 self._zwift_proc = subprocess.Popen(cmd, **popen_kwargs)
 
-                msg = f"zwift_api_polling.py elindítva (PID: {self._zwift_proc.pid})"
+                msg = f"{script_name}.py elindítva (PID: {self._zwift_proc.pid})"
                 logger.info(msg)
 
             except FileNotFoundError as exc:
-                logger.error(f"zwift_api_polling.py nem található: {exc}")
+                logger.error(f"{script_name}.py nem található: {exc}")
             except OSError as exc:
-                logger.error(f"zwift_api_polling.py indítása sikertelen: {exc}")
+                logger.error(f"{script_name}.py indítása sikertelen: {exc}")
             except Exception as exc:
-                logger.error(f"Váratlan hiba zwift_api_polling.py indításakor: {exc}")
+                logger.error(f"Váratlan hiba {script_name}.py indításakor: {exc}")
 
             # UDP handler mindig létrejön, függetlenül a subprocess sikerétől
             zwiftudp = ZwiftUDPInputHandler(s, raw_power_queue, raw_hr_queue)
@@ -3450,18 +3466,23 @@ class FanController:
         # Zwift subprocess leállítása
         if self._zwift_proc is not None:
             if self._zwift_proc.poll() is None:  # csak ha még fut
-                logger.info(
-                    f"zwift_api_polling.py leállítása (PID: {self._zwift_proc.pid})..."
+                ds = self.settings.get("datasource", {})
+                zwift_src = ds.get("zwiftudp_sources", ZwiftUDPSource.API_POLLING)
+                _zscript = (
+                    "zwift_udp_monitor.py"
+                    if zwift_src == ZwiftUDPSource.UDP_MONITOR
+                    else "zwift_api_polling.py"
                 )
+                logger.info(f"{_zscript} leállítása (PID: {self._zwift_proc.pid})...")
                 try:
                     self._zwift_proc.terminate()
                     self._zwift_proc.wait(timeout=5.0)
-                    logger.info("zwift_api_polling.py leállítva")
+                    logger.info(f"{_zscript} leállítva")
                 except subprocess.TimeoutExpired:
-                    logger.warning("zwift_api_polling.py nem állt le 5s alatt, kill...")
+                    logger.warning(f"{_zscript} nem állt le 5s alatt, kill...")
                     self._zwift_proc.kill()
                 except OSError as exc:
-                    logger.error(f"zwift_api_polling.py leállítása sikertelen: {exc}")
+                    logger.error(f"{_zscript} leállítása sikertelen: {exc}")
                 finally:
                     self._zwift_proc = None
 
