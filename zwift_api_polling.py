@@ -349,8 +349,8 @@ class ZwiftAPIClient:
                 )
 
         if activities:
-            latest: Any = activities[0] if isinstance(activities, list) else activities
-            world_id: Any = latest.get("worldId") or latest.get("world_id")
+            latest = cast(Any, activities[0] if isinstance(activities, list) else activities)
+            world_id = cast(Any, latest.get("worldId") or latest.get("world_id"))
             if world_id:
                 return world_id
 
