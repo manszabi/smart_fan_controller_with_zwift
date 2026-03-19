@@ -13,16 +13,18 @@ Credential handling (in priority order):
 
 from __future__ import annotations
 
+from collections.abc import Generator
 import argparse
 import getpass
 import json
 import os
 import socket
 import struct
-import subprocess
 import sys
 import time
 import threading
+
+from typing import Any
 
 import requests
 
@@ -37,11 +39,12 @@ BROADCAST_PORT = 7878
 DEFAULT_POLL_INTERVAL = 5.0  # seconds
 
 # Settings file – resolved relative to the exe (frozen) or script directory
-if getattr(sys, 'frozen', False):
-    _BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
-else:
-    _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SETTINGS_FILE = os.path.join(_BASE_DIR, "zwift_api_settings.json")
+_base_dir = (
+    os.path.dirname(os.path.abspath(sys.executable))
+    if getattr(sys, 'frozen', False)
+    else os.path.dirname(os.path.abspath(__file__))
+)
+SETTINGS_FILE = os.path.join(_base_dir, "zwift_api_settings.json")
 
 ZWIFT_AUTH_URL = (
     "https://secure.zwift.com/auth/realms/zwift/protocol/openid-connect/token"
@@ -73,7 +76,7 @@ class ProtobufDecoder:
         self._data = data
         self._pos = 0
 
-    def _read_varint(self):
+    def _read_varint(self) -> int:
         result = 0
         shift = 0
         while self._pos < len(self._data):
@@ -96,12 +99,13 @@ class ProtobufDecoder:
         self._pos += n
         return chunk
 
-    def fields(self):
+    def fields(self) -> Generator[tuple[int, int, int | bytes], None, None]:
         """Yield (field_number, wire_type, value) tuples."""
         while self._pos < len(self._data):
             tag = self._read_varint()
             field_number = tag >> 3
             wire_type = tag & 0x07
+            value: int | bytes
             if wire_type == 0:
                 value = self._read_varint()
             elif wire_type == 1:
@@ -116,12 +120,12 @@ class ProtobufDecoder:
             yield field_number, wire_type, value
 
     @classmethod
-    def parse_fields(cls, data: bytes) -> dict:
+    def parse_fields(cls, data: bytes) -> dict[int, int | bytes]:
         """Return {field_number: value} keeping the last value per field."""
-        result = {}
+        result: dict[int, int | bytes] = {}
         try:
             for field_number, _wt, value in cls(data).fields():
-                result[field_number] = value
+                result[field_number] = value  # type: ignore[assignment]
         except (ValueError, struct.error):
             pass
         return result
@@ -147,7 +151,7 @@ def _proto_to_int(value: int | bytes | None, default: int = 0) -> int:
     return default
 
 
-def _parse_protobuf_player_state(data: bytes) -> dict | None:
+def _parse_protobuf_player_state(data: bytes) -> dict[str, Any] | None:
     """Decode a raw PlayerState protobuf blob into a ZwiftDataStore-compatible dict.
 
     Returns *None* if the blob contains no meaningful data (all zeros).
@@ -157,7 +161,7 @@ def _parse_protobuf_player_state(data: bytes) -> dict | None:
         return None
     speed_mmh = _proto_to_int(fields.get(_PS_FIELD_SPEED, 0))
     cadence_uhz = _proto_to_int(fields.get(_PS_FIELD_CADENCE_UHZ, 0))
-    state = {
+    state: dict[str, Any] = {
         "riderId": _proto_to_int(fields.get(_PS_FIELD_ID, 0)),
         "power": _proto_to_int(fields.get(_PS_FIELD_POWER, 0)),
         "heartrate": _proto_to_int(fields.get(_PS_FIELD_HEARTRATE, 0)),
@@ -239,7 +243,7 @@ class ZwiftAuth:
             )
             self.login()
 
-    def _store_tokens(self, payload: dict) -> None:
+    def _store_tokens(self, payload: dict[str, Any]) -> None:
         self._access_token = payload["access_token"]
         self._refresh_token = payload.get("refresh_token", "")
         expires_in = int(payload.get("expires_in", 3600))
@@ -259,27 +263,27 @@ class ZwiftAPIClient:
         self._debug = debug
         self._session = requests.Session()
 
-    def _headers(self) -> dict:
+    def _headers(self) -> dict[str, str]:
         """Base headers without Accept – callers add their own Accept if needed."""
         return {
             "Authorization": f"Bearer {self._auth.access_token}",
             "Zwift-Api-Version": "2.6",
         }
 
-    def _json_headers(self) -> dict:
+    def _json_headers(self) -> dict[str, str]:
         """Headers for endpoints that support JSON responses."""
         h = self._headers()
         h["Accept"] = "application/json"
         return h
 
-    def get_profile(self) -> dict:
+    def get_profile(self) -> dict[str, Any]:
         """Return the authenticated user's profile (contains ``id``)."""
         url = f"{ZWIFT_API_BASE}/api/profiles/me"
         resp = self._session.get(url, headers=self._json_headers(), timeout=10)
         resp.raise_for_status()
         return resp.json()
 
-    def get_player_state(self, world_id: int, rider_id: int) -> dict | None:
+    def get_player_state(self, world_id: int, rider_id: int) -> dict[str, Any] | None:
         """Return the latest player state dict or *None* if not riding.
 
         Tries the relay/worlds endpoint which returns real-time protobuf data.
@@ -406,7 +410,7 @@ class ZwiftDataStore:
         self._last_update: float = 0.0
         self._total_polls: int = 0
 
-    def update(self, state: dict) -> None:
+    def update(self, state: dict[str, Any]) -> None:
         """Store the latest values from an API response dict."""
         with self._lock:
             self._power = int(state.get("power", self._power))
@@ -421,7 +425,7 @@ class ZwiftDataStore:
             self._last_update = time.time()
             self._total_polls += 1
 
-    def get_data(self) -> dict:
+    def get_data(self) -> dict[str, Any]:
         """Return a dict that is structurally identical to ZwiftDataStore.get_data()."""
         with self._lock:
             return {
@@ -454,12 +458,12 @@ class UDPBroadcaster:
         self._port = port
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def send(self, data: dict) -> None:
+    def send(self, data: dict[str, Any]) -> None:
         """JSON-encode *data* and send it via UDP."""
         payload = json.dumps(data).encode("utf-8")
         self._sock.sendto(payload, (self._host, self._port))
 
-    def log_console(self, data: dict) -> None:
+    def log_console(self, data: dict[str, Any]) -> None:
         """Print a formatted summary to the console (same format as udp_monitor)."""
         print(
             f"\r⚡ {data['power']:>4}W  "
@@ -585,14 +589,14 @@ def _sleep_remainder(loop_start: float, interval: float, stop_event: threading.E
 # ---------------------------------------------------------------------------
 
 
-def load_settings(path: str) -> dict:
+def load_settings(path: str) -> dict[str, Any]:
     """Load settings from a JSON file.
 
     Returns a dict with keys: username, password, broadcast_host,
     broadcast_port, poll_interval.  Missing or invalid values are replaced
     with defaults and a warning is printed.
     """
-    defaults = {
+    defaults: dict[str, Any] = {
         "username": "",
         "password": "",
         "broadcast_host": BROADCAST_HOST,
@@ -605,7 +609,7 @@ def load_settings(path: str) -> dict:
 
     try:
         with open(path, encoding="utf-8") as fh:
-            raw = json.load(fh)
+            raw: dict[str, Any] = json.load(fh)
     except json.JSONDecodeError:
         print(f"⚠️  Érvénytelen JSON a beállításfájlban / Invalid JSON in settings file: {path}")
         return dict(defaults)
@@ -613,7 +617,7 @@ def load_settings(path: str) -> dict:
         print(f"⚠️  Beállításfájl olvasási hiba / Settings file read error: {exc}")
         return dict(defaults)
 
-    settings = dict(defaults)
+    settings: dict[str, Any] = dict(defaults)
 
     # username
     if "username" in raw:
@@ -655,7 +659,7 @@ def load_settings(path: str) -> dict:
     return settings
 
 
-def save_settings(path: str, settings_dict: dict) -> None:
+def save_settings(path: str, settings_dict: dict[str, Any]) -> None:
     """Save settings to a JSON file with pretty formatting."""
     try:
         with open(path, "w", encoding="utf-8") as fh:
@@ -671,7 +675,7 @@ def save_settings(path: str, settings_dict: dict) -> None:
 
 def resolve_credentials(
     args: argparse.Namespace,
-    settings: dict | None = None,
+    settings: dict[str, Any] | None = None,
     settings_path: str | None = None,
 ) -> tuple[str, str]:
     """Return (username, password) from CLI args, env vars, settings file, or prompt.
@@ -705,7 +709,7 @@ def resolve_credentials(
         from_prompt = True
 
     if from_prompt and settings_path:
-        to_save = {
+        to_save: dict[str, Any] = {
             "username": username,
             "password": password,
             "broadcast_host": settings.get("broadcast_host", BROADCAST_HOST),
@@ -764,7 +768,9 @@ def main(argv: list[str] | None = None) -> int:
     settings = load_settings(SETTINGS_FILE)
 
     # Resolve poll interval: CLI > settings > hard-coded default
-    poll_interval = args.poll_interval if args.poll_interval is not None else settings["poll_interval"]
+    poll_interval: float = float(
+        args.poll_interval if args.poll_interval is not None else settings["poll_interval"]
+    )
 
     username, password = resolve_credentials(args, settings=settings, settings_path=SETTINGS_FILE)
 
@@ -782,7 +788,7 @@ def main(argv: list[str] | None = None) -> int:
     client = ZwiftAPIClient(auth, debug=args.debug)
     try:
         print("Profil lekérése / Fetching profile …")
-        profile = client.get_profile()
+        profile: dict[str, Any] = client.get_profile()
     except Exception as exc:  # noqa: BLE001
         print(f"❌ Profil lekérése sikertelen / Failed to fetch profile: {exc}")
         client.close()
@@ -802,8 +808,8 @@ def main(argv: list[str] | None = None) -> int:
 
     store = ZwiftDataStore()
     broadcaster = UDPBroadcaster(
-        host=settings["broadcast_host"],
-        port=settings["broadcast_port"],
+        host=str(settings["broadcast_host"]),
+        port=int(settings["broadcast_port"]),
     )
     stop_event = threading.Event()
 
