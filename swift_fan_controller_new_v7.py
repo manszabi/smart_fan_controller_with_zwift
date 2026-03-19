@@ -3775,13 +3775,10 @@ class HUDWindow:
             fill="#FFFFFF", font=(self._font_family, ver_size),
         )
 
-        # Külső lekerekített sarkok (felső-bal, felső-jobb)
+        # Külső lekerekített sarok (csak felső-bal)
         r = max(12, int(18 * s))
         canvas.create_rectangle(0, 0, r, r, fill=self.BG, outline="")
         canvas.create_arc(0, 0, 2 * r, 2 * r, start=90, extent=90,
-                          fill=self.LCARS_ORANGE, outline="")
-        canvas.create_rectangle(w - 6 - r, 0, w - 6, r, fill=self.BG, outline="")
-        canvas.create_arc(w - 6 - 2 * r, 0, w - 6, 2 * r, start=0, extent=90,
                           fill=self.LCARS_ORANGE, outline="")
 
     def _draw_footer(self, canvas: tk.Canvas, w: int) -> None:
@@ -3823,14 +3820,11 @@ class HUDWindow:
             fill=self.LCARS_CYAN_DIM, font=(self._font_family, footer_text_size),
         )
 
-        # Külső lekerekített sarkok (alsó-bal, alsó-jobb)
+        # Külső lekerekített sarok (csak alsó-bal)
         r = max(12, int(18 * s))
         canvas.create_rectangle(0, fh - r, r, fh, fill=self.BG, outline="")
         canvas.create_arc(0, fh - 2 * r, 2 * r, fh, start=180, extent=90,
                           fill=self.LCARS_BLUE, outline="")
-        canvas.create_rectangle(w - 6 - r, fh - r, w - 6, fh, fill=self.BG, outline="")
-        canvas.create_arc(w - 6 - 2 * r, fh - 2 * r, w - 6, fh, start=270, extent=90,
-                          fill=self.LCARS_TAN, outline="")
 
     def _draw_sidebar(self, h: int) -> None:
         """LCARS bal oldalsáv rajzolása – színes szegmensek.
