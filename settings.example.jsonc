@@ -2,17 +2,18 @@
   // ============================================================
   // GLOBÁLIS BEÁLLÍTÁSOK
   // ============================================================
+  "global_settings": {
+    // Cooldown idő másodpercben zóna csökkentésnél (0–300).
+    // Zóna emelkedésnél azonnali váltás történik, cooldown nélkül.
+    // Adaptív módosítások: nagy esés (>=2 szint) → felezés, emelkedés → duplázás.
+    "cooldown_seconds": 120,
 
-  // Cooldown idő másodpercben zóna csökkentésnél (0–300).
-  // Zóna emelkedésnél azonnali váltás történik, cooldown nélkül.
-  // Adaptív módosítások: nagy esés (>=2 szint) → felezés, emelkedés → duplázás.
-  "cooldown_seconds": 120,
-
-  // Globális fallback buffer beállítások (ha a forrás-specifikus nincs megadva).
-  "buffer_seconds": 3,         // Gördülő átlag ablak mérete (1–10 mp)
-  "minimum_samples": 6,        // Minimum minta érvényes átlaghoz (1–1000)
-  "buffer_rate_hz": 4,         // Várt mintavételi frekvencia Hz-ben (1–60)
-  "dropout_timeout": 5,        // Adatforrás kiesés timeout (1–120 mp)
+    // Globális fallback buffer beállítások (ha a forrás-specifikus nincs megadva).
+    "buffer_seconds": 3,         // Gördülő átlag ablak mérete (1–10 mp)
+    "minimum_samples": 6,        // Minimum minta érvényes átlaghoz (1–1000)
+    "buffer_rate_hz": 4,         // Várt mintavételi frekvencia Hz-ben (1–60)
+    "dropout_timeout": 5         // Adatforrás kiesés timeout (1–120 mp)
+  },
 
   // ============================================================
   // TELJESÍTMÉNY ZÓNA HATÁROK

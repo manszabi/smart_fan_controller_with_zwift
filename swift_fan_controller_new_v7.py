@@ -121,11 +121,13 @@ logger = logging.getLogger("swift_fan_controller_new")
 # ============================================================
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
-    "cooldown_seconds": 120,
-    "buffer_seconds": 3,
-    "minimum_samples": 6,
-    "buffer_rate_hz": 4,
-    "dropout_timeout": 5,
+    "global_settings": {
+        "cooldown_seconds": 120,
+        "buffer_seconds": 3,
+        "minimum_samples": 6,
+        "buffer_rate_hz": 4,
+        "dropout_timeout": 5,
+    },
     "power_zones": {
         "ftp": 180,
         "min_watt": 0,
@@ -226,12 +228,14 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
         print(f"⚠ '{settings_file}' beolvasási hiba: {exc}. Alapértelmezés használata.")
         return settings
 
-    # --- Egyszerű skaláris mezők ---
-    _load_int(loaded, settings, "cooldown_seconds", 0, 300)
-    _load_int(loaded, settings, "buffer_seconds", 1, 10)
-    _load_int(loaded, settings, "minimum_samples", 1, 1000)
-    _load_int(loaded, settings, "buffer_rate_hz", 1, 60)
-    _load_int(loaded, settings, "dropout_timeout", 1, 120)
+    # --- Globális beállítások ---
+    if isinstance(loaded.get("global_settings"), dict):
+        gs = loaded["global_settings"]
+        _load_int(gs, settings["global_settings"], "cooldown_seconds", 0, 300)
+        _load_int(gs, settings["global_settings"], "buffer_seconds", 1, 10)
+        _load_int(gs, settings["global_settings"], "minimum_samples", 1, 1000)
+        _load_int(gs, settings["global_settings"], "buffer_rate_hz", 1, 60)
+        _load_int(gs, settings["global_settings"], "dropout_timeout", 1, 120)
     # --- Teljesítmény zóna beállítások ---
     if isinstance(loaded.get("power_zones"), dict):
         pz = loaded["power_zones"]
@@ -346,19 +350,20 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
     try:
         ds_cfg = settings["datasource"]
         for prefix in ("BLE", "ANT", "zwiftUDP"):
+            gs = settings["global_settings"]
             bs = int(
                 ds_cfg.get(
-                    f"{prefix}_buffer_seconds", settings.get("buffer_seconds", 3)
+                    f"{prefix}_buffer_seconds", gs.get("buffer_seconds", 3)
                 )
             )
             ms = int(
                 ds_cfg.get(
-                    f"{prefix}_minimum_samples", settings.get("minimum_samples", 6)
+                    f"{prefix}_minimum_samples", gs.get("minimum_samples", 6)
                 )
             )
             brz = int(
                 ds_cfg.get(
-                    f"{prefix}_buffer_rate_hz", settings.get("buffer_rate_hz", 4)
+                    f"{prefix}_buffer_rate_hz", gs.get("buffer_rate_hz", 4)
                 )
             )
             if bs > 0 and brz > 0:
@@ -544,18 +549,19 @@ def _resolve_buffer_settings(settings: Dict[str, Any], role: str) -> Dict[str, A
     else:  # zwiftudp
         prefix = "zwiftUDP"
 
+    gs = settings["global_settings"]
     return {
         "buffer_seconds": ds.get(
-            f"{prefix}_buffer_seconds", settings.get("buffer_seconds", 3)
+            f"{prefix}_buffer_seconds", gs.get("buffer_seconds", 3)
         ),
         "minimum_samples": ds.get(
-            f"{prefix}_minimum_samples", settings.get("minimum_samples", 6)
+            f"{prefix}_minimum_samples", gs.get("minimum_samples", 6)
         ),
         "buffer_rate_hz": ds.get(
-            f"{prefix}_buffer_rate_hz", settings.get("buffer_rate_hz", 4)
+            f"{prefix}_buffer_rate_hz", gs.get("buffer_rate_hz", 4)
         ),
         "dropout_timeout": ds.get(
-            f"{prefix}_dropout_timeout", settings.get("dropout_timeout", 5)
+            f"{prefix}_dropout_timeout", gs.get("dropout_timeout", 5)
         ),
     }
 
@@ -3093,7 +3099,7 @@ class FanController:
         )
 
         print(
-            f"Cooldown: {s['cooldown_seconds']}s  |  "
+            f"Cooldown: {s['global_settings']['cooldown_seconds']}s  |  "
             f"0W azonnali: {'Igen' if s['power_zones'].get('zero_power_immediate', False) else 'Nem'}  |  "
             f"0HR azonnali: {'Igen' if s['heart_rate_zones'].get('zero_hr_immediate', False) else 'Nem'}"
         )
@@ -3165,7 +3171,7 @@ class FanController:
             hr_buf["minimum_samples"],
             hr_buf["buffer_rate_hz"],
         )
-        cooldown_ctrl = CooldownController(s["cooldown_seconds"])
+        cooldown_ctrl = CooldownController(s["global_settings"]["cooldown_seconds"])
         self._cooldown_ctrl = cooldown_ctrl
         printer = ConsolePrinter()
 
