@@ -73,7 +73,7 @@ Röviden a `settings.json` fő szekciói:
 
 | Szekció | Tartalom |
 |---------|----------|
-| Globális | cooldown, buffer, dropout timeout |
+| `global_settings` | cooldown, buffer, dropout timeout |
 | `power_zones` | FTP, watt tartomány, zóna százalékok, 0W azonnali leállás |
 | `ble` | ESP32 ventilátor vezérlő (kimenet) |
 | `datasource` | Adatforrás kiválasztás, ANT+/BLE/Zwift specifikus beállítások |

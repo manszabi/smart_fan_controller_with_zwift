@@ -1,9 +1,11 @@
 {
-  "cooldown_seconds": 120,
-  "buffer_seconds": 3,
-  "minimum_samples": 6,
-  "buffer_rate_hz": 4,
-  "dropout_timeout": 5,
+  "global_settings": {
+    "cooldown_seconds": 120,
+    "buffer_seconds": 3,
+    "minimum_samples": 6,
+    "buffer_rate_hz": 4,
+    "dropout_timeout": 5
+  },
   "power_zones": {
     "ftp": 200,
     "min_watt": 0,

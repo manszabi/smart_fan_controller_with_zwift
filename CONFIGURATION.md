@@ -7,14 +7,14 @@ A program a `settings.json` fájlból olvassa a beállításokat. Ha a fájl nem
 ## Gyors kezdés
 
 1. Másold a `settings.example.json` fájlt `settings.json` néven.
-2. Állítsd be az FTP értékedet (`power_zones.ftp`).
+2. Állítsd be az FTP értékedet (`power_zones.ftp`), és szükség esetén a cooldown-t (`global_settings.cooldown_seconds`).
 3. Válaszd ki az adatforrást (`datasource.power_source`, `datasource.hr_source`).
 4. Ha BLE ventilátort használsz, állítsd be a `ble.device_name` mezőt (vagy hagyd `null`-on az auto-discovery-hez).
 5. Indítsd el: `python swift_fan_controller_new_v7.py`
 
 ---
 
-## Globális beállítások
+## Globális beállítások (`global_settings`)
 
 | Mező | Típus | Tartomány | Alapértelmezett | Leírás |
 |------|-------|-----------|-----------------|--------|
