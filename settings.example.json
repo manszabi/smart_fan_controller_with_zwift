@@ -5,7 +5,6 @@
   "buffer_rate_hz": 4,
   "dropout_timeout": 5,
   "zero_power_immediate": false,
-  "zero_hr_immediate": false,
   "zone_thresholds": {
     "ftp": 200,
     "min_watt": 0,
@@ -64,6 +63,7 @@
     "z1_max_percent": 70,
     "z2_max_percent": 80,
     "valid_min_hr": 30,
-    "valid_max_hr": 220
+    "valid_max_hr": 220,
+    "zero_hr_immediate": false
   }
 }
