@@ -127,7 +127,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "buffer_rate_hz": 4,
     "dropout_timeout": 5,
     "zero_power_immediate": False,
-    "zero_hr_immediate": False,
     "zone_thresholds": {
         "ftp": 180,
         "min_watt": 0,
@@ -187,6 +186,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "z2_max_percent": 80,
         "valid_min_hr": 30,
         "valid_max_hr": 220,
+        "zero_hr_immediate": False,
     },
 }
 
@@ -233,7 +233,6 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
     _load_int(loaded, settings, "buffer_rate_hz", 1, 60)
     _load_int(loaded, settings, "dropout_timeout", 1, 120)
     _load_bool(loaded, settings, "zero_power_immediate")
-    _load_bool(loaded, settings, "zero_hr_immediate")
 
     # --- Zóna határok ---
     if isinstance(loaded.get("zone_thresholds"), dict):
@@ -340,6 +339,7 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
         _load_int(hrz, settings["heart_rate_zones"], "valid_max_hr", 150, 300)
         _load_int(hrz, settings["heart_rate_zones"], "z1_max_percent", 1, 100)
         _load_int(hrz, settings["heart_rate_zones"], "z2_max_percent", 1, 100)
+        _load_bool(hrz, settings["heart_rate_zones"], "zero_hr_immediate")
 
     # --- Kereszt-validációk ---
 
@@ -2742,7 +2742,7 @@ async def zone_controller_task(
         else ZoneMode.POWER_ONLY
     )
     zero_power_immediate = settings.get("zero_power_immediate", False)
-    zero_hr_immediate = settings.get("zero_hr_immediate", False)
+    zero_hr_immediate = settings["heart_rate_zones"].get("zero_hr_immediate", False)
     power_buf = _resolve_buffer_settings(settings, "power")
     hr_buf = _resolve_buffer_settings(settings, "hr")
     power_dropout_timeout = power_buf["dropout_timeout"]
@@ -3096,7 +3096,7 @@ class FanController:
         print(
             f"Cooldown: {s['cooldown_seconds']}s  |  "
             f"0W azonnali: {'Igen' if s['zero_power_immediate'] else 'Nem'}  |  "
-            f"0HR azonnali: {'Igen' if s['zero_hr_immediate'] else 'Nem'}"
+            f"0HR azonnali: {'Igen' if s['heart_rate_zones'].get('zero_hr_immediate', False) else 'Nem'}"
         )
         ble_fan_name = s["ble"]["device_name"]
         if ble_fan_name:
@@ -4141,7 +4141,7 @@ class HUDWindow:
             self._tile_zero_imm.config(bg=self.LCARS_CYAN if zpi else self.TEXT_DIM)
 
             # zero_hr_immediate
-            zhi = self._ctrl.settings.get("zero_hr_immediate", False)
+            zhi = self._ctrl.settings["heart_rate_zones"].get("zero_hr_immediate", False)
             self._tile_zero_hr_imm.config(bg=self.LCARS_CYAN if zhi else self.TEXT_DIM)
 
             # higher_wins
