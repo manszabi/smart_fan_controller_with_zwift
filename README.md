@@ -15,7 +15,7 @@ A program valós időben fogadja a teljesítmény (watt) és szívfrekvencia (bp
 │  BLE HR     │     │  ┌────────────────┐  │     │             │
 ├─────────────┤     │  │ Gördülő átlag  │  │     │  LEVEL:0–3  │
 │  Zwift UDP  ├────►│  │ Zóna számítás  │  │     └─────────────┘
-│  (API poll) │     │  │ Cooldown       │  │
+│  (API/UDP)  │     │  │ Cooldown       │  │
 └─────────────┘     │  │ Higher Wins    │  │
                     │  └────────────────┘  │
                     └──────────────────────┘
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 |--------|-----------|---------|
 | `bleak` | Opcionális | BLE kommunikáció (ventilátor + BLE szenzorok) |
 | `openant` | Opcionális | ANT+ kommunikáció (power meter, HR monitor) |
-| `requests` | Opcionális | Zwift API polling (zwiftudp adatforrás) |
+| `requests` | Opcionális | Zwift API polling (`zwift_api_polling.py`, ha `zwiftudp_sources: "zwift_api_polling"`) |
 
 A program a rendelkezésre álló könyvtárak alapján automatikusan engedélyezi/letiltja az adatforrásokat. Nem kötelező mindet telepíteni.
 
@@ -117,7 +117,7 @@ Kommentezett referencia: `settings.example.jsonc`
 }
 ```
 
-### Zwift power + BLE HR → BLE ventilátor
+### Zwift power + BLE HR → BLE ventilátor (API polling, alapértelmezett)
 
 ```json
 {
@@ -125,7 +125,26 @@ Kommentezett referencia: `settings.example.jsonc`
   "ble": { "device_name": "FanController", "pin_code": 123456 },
   "datasource": {
     "power_source": "zwiftudp",
-    "hr_source": "ble"
+    "hr_source": "ble",
+    "zwiftudp_sources": "zwift_api_polling"
+  },
+  "heart_rate_zones": {
+    "enabled": true,
+    "zone_mode": "higher_wins"
+  }
+}
+```
+
+### Zwift power + BLE HR → BLE ventilátor (UDP monitor, bejelentkezés nélkül)
+
+```json
+{
+  "power_zones": { "ftp": 180 },
+  "ble": { "device_name": "FanController", "pin_code": 123456 },
+  "datasource": {
+    "power_source": "zwiftudp",
+    "hr_source": "ble",
+    "zwiftudp_sources": "zwift_udp_monitor"
   },
   "heart_rate_zones": {
     "enabled": true,
@@ -184,7 +203,8 @@ main()
 | Fájl | Leírás |
 |------|--------|
 | `swift_fan_controller_new_v7.py` | Fő program |
-| `zwift_api_polling.py` | Zwift API polling script (automatikusan indul) |
+| `zwift_api_polling.py` | Zwift HTTPS API polling script (automatikusan indul, ha `zwiftudp_sources: "zwift_api_polling"`) |
+| `zwift_udp_monitor.py` | Zwift Companion App UDP figyelő script (automatikusan indul, ha `zwiftudp_sources: "zwift_udp_monitor"`) |
 | `esp32_fan_controller.ino` | ESP32 firmware (Arduino – Xiao ESP32-C3) |
 | `settings.json` | Aktív beállítások |
 | `settings.example.json` | Példa beállítások (alapértelmezett értékek) |

@@ -131,6 +131,10 @@
     "ble_hr_max_retries": 10,
 
     // --- Zwift UDP beállítások ---
+    // Melyik háttérprogram szolgáltatja az adatokat (automatikusan indul subprocess-ként):
+    //   "zwift_api_polling"  – zwift_api_polling.py (Zwift HTTPS API lekérdezés, alapértelmezett)
+    //   "zwift_udp_monitor"  – zwift_udp_monitor.py (Zwift Companion App UDP csomag figyelés)
+    "zwiftudp_sources": "zwift_api_polling",
     "zwift_udp_port": 7878,
     "zwift_udp_host": "127.0.0.1"
   }
