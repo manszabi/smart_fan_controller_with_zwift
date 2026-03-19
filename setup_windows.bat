@@ -42,7 +42,7 @@ echo Fuggosegek telepitese...
 call .venv\Scripts\activate.bat
 
 python -m pip install --upgrade pip >nul 2>&1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 if errorlevel 1 (
     echo [HIBA] Fuggosegek telepitese sikertelen!
     pause
@@ -52,7 +52,7 @@ echo [OK] Fuggosegek telepitve
 
 echo.
 echo PyInstaller telepitese (exe buildhez)...
-pip install pyinstaller >nul 2>&1
+python -m pip install pyinstaller >nul 2>&1
 if errorlevel 1 (
     echo [FIGYELEM] PyInstaller telepitese sikertelen - exe build nem lesz elerheto
 ) else (

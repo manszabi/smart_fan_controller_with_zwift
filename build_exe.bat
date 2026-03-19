@@ -18,16 +18,16 @@ if not exist ".venv\Scripts\activate.bat" (
 call .venv\Scripts\activate.bat
 
 :: Install PyInstaller if needed
-pip show pyinstaller >nul 2>&1
+python -m pip show pyinstaller >nul 2>&1
 if errorlevel 1 (
     echo PyInstaller telepitese...
-    pip install pyinstaller
+    python -m pip install pyinstaller
     echo.
 )
 
 echo Build inditas...
 echo.
-pyinstaller smart_fan_controller.spec --noconfirm
+python -m PyInstaller smart_fan_controller.spec --noconfirm
 
 if errorlevel 1 (
     echo.
