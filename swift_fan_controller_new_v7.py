@@ -49,7 +49,7 @@ import os
 
 from collections import deque
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, cast
 
 # --- Enum-ok a magic string-ek kiváltásához ---
 # str öröklés: JSON-ból jövő string értékekkel is kompatibilis (==)
@@ -1343,12 +1343,13 @@ async def _scan_ble_with_autodiscovery(
 
     try:
         # return_adv=True: dict[str, tuple[BLEDevice, AdvertisementData]]
-        discovered = await BleakScanner.discover(
+        discovered: Any = await BleakScanner.discover(
             timeout=scan_timeout, return_adv=True
         )
 
-        raw_items = discovered.values() if isinstance(discovered, dict) else discovered
-        items: list[Any] = list(raw_items)
+        items: list[Any] = (
+            list(discovered.values()) if isinstance(discovered, dict) else list(discovered)
+        )
 
         for item in items:
             device: Any = None
@@ -2499,11 +2500,13 @@ class ZwiftUDPInputHandler:
 
         if not isinstance(data, dict):
             return
+        # Pylance szűkíti dict[str, Unknown]-ra; cast → dict[str, Any]
+        pkt = cast(Dict[str, Any], data)
 
         valid_any = False
 
-        if self.process_power and "power" in data:
-            p: int | float = data["power"]
+        if self.process_power and "power" in pkt:
+            p: int | float = pkt["power"]
             min_watt = self.settings["power_zones"]["min_watt"]
             max_watt = self.settings["power_zones"]["max_watt"]
             if is_valid_power(p, min_watt, max_watt):
@@ -2515,12 +2518,12 @@ class ZwiftUDPInputHandler:
             else:
                 logger.debug(f"Zwift UDP: érvénytelen power: {p}")
 
-        if self.process_hr and "heartrate" in data:
+        if self.process_hr and "heartrate" in pkt:
             hrz = self.settings.get("heart_rate_zones", {})
             valid_min_hr: int = hrz.get("valid_min_hr", 30)
             valid_max_hr: int = hrz.get("valid_max_hr", 220)
 
-            h: int | float = data["heartrate"]
+            h: int | float = pkt["heartrate"]
             if is_valid_hr(h, valid_min_hr, valid_max_hr):
                 try:
                     self.hr_queue.put_nowait(round(h))
@@ -3102,6 +3105,7 @@ class FanController:
                 self._zwift_proc.wait(timeout=5.0)
             except subprocess.TimeoutExpired:
                 self._zwift_proc.kill()
+                self._zwift_proc.wait()  # zombie elkerülése
             except OSError:
                 pass
             finally:
@@ -3530,9 +3534,11 @@ class FanController:
             if self._zwift_proc.poll() is None:  # csak ha még fut
                 ds = self.settings.get("datasource", {})
                 zwift_src = ds.get("zwiftudp_sources", ZwiftUDPSource.API_POLLING)
+                # Ha fallback történt, a tényleges futó script az api_polling
                 _zscript = (
                     "zwift_udp_monitor.py"
                     if zwift_src == ZwiftUDPSource.UDP_MONITOR
+                    and not self._zwift_switched_to_api
                     else "zwift_api_polling.py"
                 )
                 logger.info(f"{_zscript} leállítása (PID: {self._zwift_proc.pid})...")
