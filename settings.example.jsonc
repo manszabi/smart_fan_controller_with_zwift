@@ -14,23 +14,23 @@
   "buffer_rate_hz": 4,         // Várt mintavételi frekvencia Hz-ben (1–60)
   "dropout_timeout": 5,        // Adatforrás kiesés timeout (1–120 mp)
 
-  // Ha true, 0W detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
-  "zero_power_immediate": false,
-
   // ============================================================
   // TELJESÍTMÉNY ZÓNA HATÁROK
   // ============================================================
-  "zone_thresholds": {
+  "power_zones": {
     "ftp": 200,                // Funkcionális küszöbteljesítmény wattban (100–500)
     "min_watt": 0,             // Minimális érvényes pozitív watt (0–9999)
     "max_watt": 1000,          // Maximális érvényes watt (1–100000)
     "z1_max_percent": 60,      // Z1 felső határ az FTP %-ában (1–100)
-    "z2_max_percent": 89       // Z2 felső határ az FTP %-ában (1–100)
+    "z2_max_percent": 89,      // Z2 felső határ az FTP %-ában (1–100)
     // Zóna kiosztás:
     //   Z0: 0W (ventilátor kikapcsolva)
     //   Z1: 1W – FTP×z1_max_percent%
     //   Z2: FTP×z1_max_percent%+1 – FTP×z2_max_percent%
     //   Z3: FTP×z2_max_percent%+1 – max_watt
+
+    // Ha true, 0W detektálásakor azonnal LEVEL:0-ra vált (cooldown nélkül).
+    "zero_power_immediate": false
   },
 
   // ============================================================
