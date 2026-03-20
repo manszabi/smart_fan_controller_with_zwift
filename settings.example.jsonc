@@ -131,17 +131,8 @@
     "ble_hr_max_retries": 10,
 
     // --- Zwift UDP beállítások ---
-    // Melyik háttérprogram szolgáltatja az adatokat (automatikusan indul subprocess-ként):
-    //   "zwift_api_polling"  – zwift_api_polling.py (Zwift HTTPS API lekérdezés, alapértelmezett)
-    //   "zwift_udp_monitor"  – zwift_udp_monitor.py (Zwift Companion App UDP csomag figyelés)
-    "zwiftudp_sources": "zwift_api_polling",
-
-    // Automatikus fallback timeout (csak "zwift_udp_monitor" esetén aktív).
-    // Ha ennyi másodpercig nem érkezik adat a zwift_udp_monitor.py-tól,
-    // a program leállítja és helyette elindítja a zwift_api_polling.py-t.
-    // Hibaüzenet kerül a logba és a konzolra. Tartomány: 5–300 mp.
-    "zwiftudp_sources_timeout": 30,
-
+    // A zwift_api_polling.py automatikusan indul subprocess-ként,
+    // ha a power_source vagy hr_source értéke "zwiftudp".
     "zwift_udp_port": 7878,
     "zwift_udp_host": "127.0.0.1"
   }

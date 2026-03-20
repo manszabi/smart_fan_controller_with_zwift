@@ -106,46 +106,7 @@ zwift_exe = EXE(
     icon=None,
 )
 
-# --- Zwift UDP monitor exe ---
-monitor_a = Analysis(
-    ['zwift_udp_monitor.py'],
-    pathex=[],
-    binaries=[],
-    datas=[
-        ('zwift_udp_monitor_setting.json', '.'),
-    ],
-    hiddenimports=[
-        'json',
-        'socket',
-        'struct',
-        'threading',
-        'argparse',
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
-    noarchive=False,
-)
-monitor_pyz = PYZ(monitor_a.pure, monitor_a.zipped_data, cipher=block_cipher)
-monitor_exe = EXE(
-    monitor_pyz,
-    monitor_a.scripts,
-    [],
-    exclude_binaries=True,
-    name='zwift_udp_monitor',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    console=True,
-    icon=None,
-)
-
-# --- Bundle all three into one dist folder ---
+# --- Bundle all into one dist folder ---
 coll = COLLECT(
     main_exe,
     main_a.binaries,
@@ -155,10 +116,6 @@ coll = COLLECT(
     zwift_a.binaries,
     zwift_a.zipfiles,
     zwift_a.datas,
-    monitor_exe,
-    monitor_a.binaries,
-    monitor_a.zipfiles,
-    monitor_a.datas,
     strip=False,
     upx=True,
     upx_exclude=[],
