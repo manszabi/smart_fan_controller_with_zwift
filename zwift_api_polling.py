@@ -501,7 +501,7 @@ def run_polling_loop(
 ) -> None:
     """Main polling loop: fetch player state → store → broadcast."""
     world_id: int | None = None
-    consecutive_errors = 0
+    consecutive_errors: int = 0
 
     while not stop_event.is_set():
         loop_start = time.time()
