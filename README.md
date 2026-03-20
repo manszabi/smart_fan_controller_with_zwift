@@ -1,6 +1,6 @@
 # Smart Fan Controller
 
-Kerékpáros edzés ventilátor vezérlő – ANT+, BLE és Zwift UDP szenzor adatok alapján automatikusan szabályozza a BLE ventilátort (ESP32).
+Kerékpáros edzés ventilátor vezérlő – ANT+, BLE és Zwift API szenzor adatok alapján automatikusan szabályozza a BLE ventilátort (ESP32).
 
 ## Működés
 
@@ -14,8 +14,8 @@ A program valós időben fogadja a teljesítmény (watt) és szívfrekvencia (bp
 │  BLE Power  ├────►│                      ├────►│  Vezérlő    │
 │  BLE HR     │     │  ┌────────────────┐  │     │             │
 ├─────────────┤     │  │ Gördülő átlag  │  │     │  LEVEL:0–3  │
-│  Zwift UDP  ├────►│  │ Zóna számítás  │  │     └─────────────┘
-│  (API/UDP)  │     │  │ Cooldown       │  │
+│  Zwift API  ├────►│  │ Zóna számítás  │  │     └─────────────┘
+│  (polling)  │     │  │ Cooldown       │  │
 └─────────────┘     │  │ Higher Wins    │  │
                     │  └────────────────┘  │
                     └──────────────────────┘
@@ -23,11 +23,11 @@ A program valós időben fogadja a teljesítmény (watt) és szívfrekvencia (bp
 
 ## Fő jellemzők
 
-- **Három adatforrás:** ANT+ (USB dongle), BLE (Bluetooth Low Energy), Zwift UDP – szabadon kombinálhatók
+- **Három adatforrás:** ANT+ (USB dongle), BLE (Bluetooth Low Energy), Zwift API polling – szabadon kombinálhatók
 - **Három zóna mód:** power_only, hr_only, higher_wins (a magasabb zóna nyer)
 - **Adaptív cooldown:** zóna csökkentésnél várakozás (felezés nagy esésnél, duplázás visszaemelkedésnél)
 - **Auto-discovery:** BLE és ANT+ eszközök automatikus felderítése és logolása
-- **Watchdog:** ANT+ USB dongle kihúzás/lemerülés automatikus detektálása és reconnect; Zwift UDP Monitor → API Polling automatikus fallback
+- **Watchdog:** ANT+ USB dongle kihúzás/lemerülés automatikus detektálása és reconnect
 - **HUD:** Star Trek LCARS stílusú lebegő ablak (tkinter) – valós idejű zóna, watt, HR kijelzés
 - **Headless mód:** tkinter nélkül is fut (pl. Raspberry Pi terminálban)
 
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 |--------|-----------|---------|
 | `bleak` | Opcionális | BLE kommunikáció (ventilátor + BLE szenzorok) |
 | `openant` | Opcionális | ANT+ kommunikáció (power meter, HR monitor) |
-| `requests` | Opcionális | Zwift API polling (`zwift_api_polling.py`, ha `zwiftudp_sources: "zwift_api_polling"`) |
+| `requests` | Opcionális | Zwift API polling (`zwift_api_polling.py`, ha power/hr forrás `"zwiftudp"`) |
 
 A program a rendelkezésre álló könyvtárak alapján automatikusan engedélyezi/letiltja az adatforrásokat. Nem kötelező mindet telepíteni.
 
@@ -117,7 +117,7 @@ Kommentezett referencia: `settings.example.jsonc`
 }
 ```
 
-### Zwift power + BLE HR → BLE ventilátor (API polling, alapértelmezett)
+### Zwift power + BLE HR → BLE ventilátor (API polling)
 
 ```json
 {
@@ -125,29 +125,7 @@ Kommentezett referencia: `settings.example.jsonc`
   "ble": { "device_name": "FanController", "pin_code": 123456 },
   "datasource": {
     "power_source": "zwiftudp",
-    "hr_source": "ble",
-    "zwiftudp_sources": "zwift_api_polling"
-  },
-  "heart_rate_zones": {
-    "enabled": true,
-    "zone_mode": "higher_wins"
-  }
-}
-```
-
-### Zwift power + BLE HR → BLE ventilátor (UDP monitor, bejelentkezés nélkül)
-
-Ha a Zwift Companion App (ZCA) 30 másodpercig nem küld adatot, automatikusan átváltódik `zwift_api_polling`-ra.
-
-```json
-{
-  "power_zones": { "ftp": 180 },
-  "ble": { "device_name": "FanController", "pin_code": 123456 },
-  "datasource": {
-    "power_source": "zwiftudp",
-    "hr_source": "ble",
-    "zwiftudp_sources": "zwift_udp_monitor",
-    "zwiftudp_sources_timeout": 30
+    "hr_source": "ble"
   },
   "heart_rate_zones": {
     "enabled": true,
@@ -188,7 +166,6 @@ main()
 │   ├── BLEPowerInput*       – BLE notification → raw_power_queue
 │   ├── BLEHRInput*          – BLE notification → raw_hr_queue
 │   ├── ZwiftUDPInput*       – UDP JSON → raw_power_queue / raw_hr_queue
-│   ├── ZwiftUDPWatchdog*    – timeout → zwift_udp_monitor leállítás + api_polling fallback
 │   ├── PowerProcessor       – raw_power_queue → átlag → zóna → zone_event
 │   ├── HRProcessor          – raw_hr_queue → átlag → zóna → zone_event
 │   ├── ZoneController       – zone_event → cooldown → zone_queue
@@ -207,8 +184,7 @@ main()
 | Fájl | Leírás |
 |------|--------|
 | `swift_fan_controller_new_v7.py` | Fő program |
-| `zwift_api_polling.py` | Zwift HTTPS API polling script (automatikusan indul, ha `zwiftudp_sources: "zwift_api_polling"`) |
-| `zwift_udp_monitor.py` | Zwift Companion App UDP figyelő script (automatikusan indul, ha `zwiftudp_sources: "zwift_udp_monitor"`) |
+| `zwift_api_polling.py` | Zwift HTTPS API polling script (automatikusan indul, ha power/hr forrás `"zwiftudp"`) |
 | `esp32_fan_controller.ino` | ESP32 firmware (Arduino – Xiao ESP32-C3) |
 | `settings.json` | Aktív beállítások |
 | `settings.example.json` | Példa beállítások (alapértelmezett értékek) |

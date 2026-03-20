@@ -10,7 +10,7 @@ Minden fő funkció különálló aszinkron feladatban/szálban fut:
   - ANT+ bemenő adatkezelés (HR, power)        → ANTPlusInputHandler (daemon szál + asyncio bridge)
   - BLE ventilátor kimenő vezérlés              → BLEFanOutputController (asyncio korrutin)
   - BLE bemenő adatok (HR, power)               → BLEPowerInputHandler, BLEHRInputHandler (asyncio)
-  - Zwift UDP bejövő adatkezelés                → ZwiftUDPInputHandler (asyncio DatagramProtocol)
+  - Zwift API polling bejövő adatkezelés          → ZwiftUDPInputHandler (asyncio DatagramProtocol)
   - Power átlag számítás                        → PowerAverager + power_processor_task
   - HR átlag számítás                           → HRAverager + hr_processor_task
   - higher_wins logika                          → apply_zone_mode() (tiszta függvény)
@@ -66,11 +66,7 @@ class ZoneMode(str, enum.Enum):
 VALID_DATA_SOURCES: tuple[DataSource, ...] = tuple(DataSource)
 VALID_ZONE_MODES: tuple[ZoneMode, ...] = tuple(ZoneMode)
 
-class ZwiftUDPSource(str, enum.Enum):
-    API_POLLING = "zwift_api_polling"
-    UDP_MONITOR = "zwift_udp_monitor"
 
-VALID_ZWIFTUDP_SOURCES: tuple[ZwiftUDPSource, ...] = tuple(ZwiftUDPSource)
 
 Node: Any = None
 ANTPLUS_NETWORK_KEY: Any = None  # type: ignore[reportConstantRedefinition]
@@ -195,8 +191,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "ble_hr_max_retries": 10,
         "zwift_udp_port": 7878,
         "zwift_udp_host": "127.0.0.1",
-        "zwiftudp_sources": ZwiftUDPSource.API_POLLING,
-        "zwiftudp_sources_timeout": 30,
     },
 }
 
@@ -331,9 +325,6 @@ def load_settings(settings_file: str = "settings.json") -> Dict[str, Any]:
         if isinstance(ds.get("zwift_udp_host"), str) and ds["zwift_udp_host"]:
             settings["datasource"]["zwift_udp_host"] = ds["zwift_udp_host"]
         _load_int(ds, settings["datasource"], "zwift_udp_port", 1024, 65535)
-        if ds.get("zwiftudp_sources") in VALID_ZWIFTUDP_SOURCES:
-            settings["datasource"]["zwiftudp_sources"] = ds["zwiftudp_sources"]
-        _load_int(ds, settings["datasource"], "zwiftudp_sources_timeout", 5, 300)
 
         for prefix in ("BLE", "ANT", "zwiftUDP"):
             _load_int(ds, settings["datasource"], f"{prefix}_buffer_seconds", 1, 60)
@@ -2419,7 +2410,7 @@ class BLEHRInputHandler(_BLESensorInputHandler):
 class ZwiftUDPInputHandler:
     """Zwift UDP adatforrás fogadó – asyncio DatagramProtocol alapú.
 
-    A zwift-udp-monitor programból érkező JSON csomagokat fogadja UDP-n.
+    A zwift_api_polling programból érkező JSON csomagokat fogadja UDP-n.
     Asyncio DatagramProtocol alapú implementáció, teljesen non-blocking.
     Érvényes power és HR értékeket az asyncio queue-kba teszi.
 
@@ -3061,7 +3052,6 @@ class FanController:
         self._tasks: list[asyncio.Task[Any]] = []
         self._running = True
         self._zwift_proc: Optional[subprocess.Popen[Any]] = None
-        self._zwift_switched_to_api: bool = False  # UDP→API fallback történt-e
         # Handler ref-ek (HUD és leállítás számára)
         self._ble_fan: Optional[BLEFanOutputController] = None
         self._ble_power: Optional[BLEPowerInputHandler] = None
@@ -3096,7 +3086,7 @@ class FanController:
         )
 
     def _start_zwift_subprocess(self, script_name: str) -> None:
-        """Elindít egy Zwift subprocess-t (zwift_udp_monitor vagy zwift_api_polling).
+        """Elindít egy Zwift subprocess-t (zwift_api_polling).
 
         Leállítja az esetlegesen még futó előző folyamatot, majd elindítja
         az újat. Az eredményt self._zwift_proc tartalmazza.
@@ -3151,37 +3141,6 @@ class FanController:
             logger.error(f"{script_name}.py indítása sikertelen: {exc}")
         except Exception as exc:
             logger.error(f"Váratlan hiba {script_name}.py indításakor: {exc}")
-
-    async def _zwift_udp_watchdog_task(
-        self,
-        zwift_handler: "ZwiftUDPInputHandler",
-        timeout_sec: int,
-    ) -> None:
-        """Figyeli, hogy a zwift_udp_monitor.py küld-e adatot.
-
-        Ha `timeout_sec` másodpercig nem érkezik érvényes csomag, leállítja
-        a zwift_udp_monitor.py-t és elindítja a zwift_api_polling.py-t
-        fallback forrásként. A feladat ezután befejezi magát (egyszeri váltás).
-        """
-        watchdog_start = time.monotonic()
-        while True:
-            await asyncio.sleep(1)
-            if not self._running:
-                return
-            now = time.monotonic()
-            last = zwift_handler.last_packet_time
-            # Referencia időpont: watchdog indulása vagy utolsó csomag, amelyik késõbb volt
-            effective_last = last if last > 0.0 else watchdog_start
-            if (now - effective_last) >= timeout_sec:
-                msg = (
-                    f"zwift_udp_monitor.py nem küldött adatot {timeout_sec}s-ig – "
-                    "fallback: zwift_api_polling.py indítása"
-                )
-                logger.error(msg)
-                print(f"\n[HIBA] {msg}")
-                self._zwift_switched_to_api = True
-                self._start_zwift_subprocess("zwift_api_polling")
-                return  # watchdog befejezi magát, az api_polling dropout kezelés veszi át
 
     def print_startup_info(self) -> None:
         """Kiírja az indítási konfigurációs összefoglalót."""
@@ -3362,17 +3321,10 @@ class FanController:
             hr_source == DataSource.ZWIFTUDP and hr_enabled
         )
         if needs_zwift:
-            # A használandó Zwift adatforrás script kiválasztása
-            zwift_src = ds.get("zwiftudp_sources", ZwiftUDPSource.API_POLLING)
-            if zwift_src == ZwiftUDPSource.UDP_MONITOR:
-                script_name = "zwift_udp_monitor"
-            else:
-                script_name = "zwift_api_polling"
+            # Zwift API polling subprocess indítása
+            self._start_zwift_subprocess("zwift_api_polling")
 
-            # Subprocess indítása a segédmetódussal
-            self._start_zwift_subprocess(script_name)
-
-            # UDP handler mindig létrejön, függetlenül a subprocess sikerétől
+            # UDP handler a zwift_api_polling.py-tól érkező csomagok fogadásához
             zwiftudp = ZwiftUDPInputHandler(s, raw_power_queue, raw_hr_queue)
             self._zwift_udp = zwiftudp
             self._tasks.append(
@@ -3387,16 +3339,6 @@ class FanController:
                     name="ZwiftUDPInput",
                 )
             )
-
-            # Ha UDP_MONITOR a forrás, elindítjuk a watchdog taskot
-            if zwift_src == ZwiftUDPSource.UDP_MONITOR:
-                udp_timeout = ds.get("zwiftudp_sources_timeout", 30)
-                self._tasks.append(
-                    asyncio.create_task(
-                        self._zwift_udp_watchdog_task(zwiftudp, udp_timeout),
-                        name="ZwiftUDPWatchdog",
-                    )
-                )
 
         needs_antplus = (power_source == DataSource.ANTPLUS) or (
             hr_source == DataSource.ANTPLUS and hr_enabled
@@ -3535,25 +3477,16 @@ class FanController:
         # Zwift subprocess leállítása
         if self._zwift_proc is not None:
             if self._zwift_proc.poll() is None:  # csak ha még fut
-                ds = self.settings.get("datasource", {})
-                zwift_src = ds.get("zwiftudp_sources", ZwiftUDPSource.API_POLLING)
-                # Ha fallback történt, a tényleges futó script az api_polling
-                _zscript = (
-                    "zwift_udp_monitor.py"
-                    if zwift_src == ZwiftUDPSource.UDP_MONITOR
-                    and not self._zwift_switched_to_api
-                    else "zwift_api_polling.py"
-                )
-                logger.info(f"{_zscript} leállítása (PID: {self._zwift_proc.pid})...")
+                logger.info(f"zwift_api_polling.py leállítása (PID: {self._zwift_proc.pid})...")
                 try:
                     self._zwift_proc.terminate()
                     self._zwift_proc.wait(timeout=5.0)
-                    logger.info(f"{_zscript} leállítva")
+                    logger.info("zwift_api_polling.py leállítva")
                 except subprocess.TimeoutExpired:
-                    logger.warning(f"{_zscript} nem állt le 5s alatt, kill...")
+                    logger.warning("zwift_api_polling.py nem állt le 5s alatt, kill...")
                     self._zwift_proc.kill()
                 except OSError as exc:
-                    logger.error(f"{_zscript} leállítása sikertelen: {exc}")
+                    logger.error(f"zwift_api_polling.py leállítása sikertelen: {exc}")
                 finally:
                     self._zwift_proc = None
 

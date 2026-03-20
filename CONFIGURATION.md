@@ -158,29 +158,12 @@ Minden forrásnak saját buffer paraméterei vannak. Ha nincs megadva, a globál
 
 | Mező | Típus | Értékek / Tartomány | Alapértelmezett | Leírás |
 |------|-------|---------------------|-----------------|--------|
-| `zwiftudp_sources` | string | `"zwift_api_polling"`, `"zwift_udp_monitor"` | `"zwift_api_polling"` | Melyik háttérprogram szolgáltatja a Zwift adatokat. |
-| `zwiftudp_sources_timeout` | int | 5–300 | 30 | Automatikus fallback timeout másodpercben (csak `"zwift_udp_monitor"` esetén). |
 | `zwift_udp_port` | int | 1024–65535 | 7878 | UDP port, amelyen a háttérprogram adatot küld. |
 | `zwift_udp_host` | string | – | `"127.0.0.1"` | UDP host (localhost). |
 
-Ha `power_source` vagy `hr_source` értéke `"zwiftudp"`, a program automatikusan elindítja a `zwiftudp_sources` által meghatározott háttérprogramot subprocessként:
+Ha `power_source` vagy `hr_source` értéke `"zwiftudp"`, a program automatikusan elindítja a `zwift_api_polling.py` scriptet subprocessként. A script Zwift HTTPS API OAuth2 lekérdezéssel szerzi meg az adatokat (Zwift fiókhoz bejelentkezés szükséges), majd JSON formátumban (power, heartrate, cadence, speed_kmh) továbbítja azokat a `zwift_udp_host:zwift_udp_port` címre.
 
-| Érték | Script | Működés |
-|-------|--------|---------|
-| `"zwift_api_polling"` | `zwift_api_polling.py` | Zwift HTTPS API OAuth2 lekérdezés. Zwift fiókhoz bejelentkezés szükséges. |
-| `"zwift_udp_monitor"` | `zwift_udp_monitor.py` | Zwift Companion App (ZCA) UDP csomagok figyelése (port 21587). Bejelentkezés nem szükséges. |
-
-Mindkét script azonos JSON formátumban (power, heartrate, cadence, speed_kmh) közvetíti az adatokat a `zwift_udp_host:zwift_udp_port` címre, így a fan controller oldalán nincs különbség.
-
-**Automatikus fallback (`zwift_udp_monitor` → `zwift_api_polling`):**
-
-Ha `zwiftudp_sources: "zwift_udp_monitor"` van beállítva és `zwiftudp_sources_timeout` másodpercig nem érkezik érvényes csomag (pl. a Zwift Companion App nincs elindítva, vagy elvesztette a kapcsolatot), a program:
-
-1. Hibaüzenetet ír a logba és a konzolra.
-2. Leállítja a `zwift_udp_monitor.py`-t.
-3. Automatikusan elindítja a `zwift_api_polling.py`-t fallbackként.
-
-A fallback egyszeri – ha a `zwift_api_polling.py` sem küld adatot, a szokásos dropout logika (ventilátor leállítása) lép életbe.
+Ha a `zwift_api_polling.py` nem küld adatot, a szokásos dropout logika (ventilátor leállítása) lép életbe.
 
 ---
 

@@ -2,7 +2,7 @@
 zwift_api_polling.py – Zwift API alapú adatlekérés és továbbítás
 Polls the Zwift HTTPS API for player state (power/HR/cadence/speed) and
 broadcasts identical JSON to 127.0.0.1:7878 so smart_fan_controller.py
-works with this script interchangeably with zwift_udp_monitor.py.
+works with this script.
 
 Credential handling (in priority order):
   1. --username / --password CLI flags
@@ -58,7 +58,7 @@ TOKEN_REFRESH_BUFFER = 30  # seconds
 # Back-off for rate-limit (429) responses
 RATE_LIMIT_BACKOFF = 5.0  # seconds
 
-# Unit conversion factors (same as zwift_udp_monitor.py)
+# Unit conversion factors (confirmed from zwift_messages.proto)
 _MICROHERTZ_TO_RPM = 60 / 1_000_000   # cadenceUHz: µHz → RPM
 _MM_PER_HOUR_TO_KM_PER_HOUR = 1 / 1_000_000  # speed: mm/h → km/h
 
@@ -390,14 +390,14 @@ class RateLimitError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# ZwiftDataStore – thread-safe store identical in structure to udp_monitor
+# ZwiftDataStore – thread-safe store for latest instant values
 # ---------------------------------------------------------------------------
 
 
 class ZwiftDataStore:
     """Thread-safe store for the most recent Zwift rider data.
 
-    Mirrors the same interface as ZwiftDataStore in zwift_udp_monitor.py so
+    Thread-safe store for the most recent Zwift rider data so
     the output dict is byte-for-byte compatible.
     """
 
@@ -436,7 +436,7 @@ class ZwiftDataStore:
                 "speed_kmh": self._speed_kmh,
                 "rider_id": self._rider_id,
                 "last_update": self._last_update,
-                "total_packets": self._total_polls,  # matches key name in udp_monitor
+                "total_packets": self._total_polls,
                 "timestamp": time.time(),
             }
 
@@ -447,7 +447,7 @@ class ZwiftDataStore:
 
 
 # ---------------------------------------------------------------------------
-# UDPBroadcaster – identical to the one in zwift_udp_monitor.py
+# UDPBroadcaster – sends JSON payloads to smart_fan_controller
 # ---------------------------------------------------------------------------
 
 
@@ -465,7 +465,7 @@ class UDPBroadcaster:
         self._sock.sendto(payload, (self._host, self._port))
 
     def log_console(self, data: dict[str, Any]) -> None:
-        """Print a formatted summary to the console (same format as udp_monitor)."""
+        """Print a formatted summary to the console."""
         print(
             f"\r⚡ {data['power']:>4}W  "
             f"❤️  {data['heartrate']:>3}bpm  "
