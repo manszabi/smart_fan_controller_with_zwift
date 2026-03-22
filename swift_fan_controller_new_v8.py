@@ -4472,7 +4472,8 @@ class HUDWindow(QWidget):
                     c = "#FFFFFF" if flash_white else self.LCARS_RED
                     self._update_label(self._lbl_ble, "OFFLINE", c)
             else:
-                self._update_label(self._lbl_ble, "DISABLED", self.TEXT_DIM)
+                c = "#FFFFFF" if flash_white else self.TEXT_DIM
+                self._update_label(self._lbl_ble, "DISABLED", c)
 
             # BLE szenzorok
             ds = self._ctrl.settings["datasource"]
