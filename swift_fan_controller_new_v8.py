@@ -4232,7 +4232,7 @@ class HUDWindow(QWidget):
     # ────────── UI SEGÉDFÜGGVÉNYEK ──────────
 
     def _make_row(self, layout: "QVBoxLayout", label: str, value: str,  # type: ignore[reportInvalidTypeForm]
-                  color: str, label_bg: str) -> "QLabel":
+                  color: str, label_bg: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
         """Telemetria sor LCARS színes label háttérrel."""
         row = QWidget()
         row.setStyleSheet(f"background-color: {self.PANEL_BG};")
@@ -4277,7 +4277,7 @@ class HUDWindow(QWidget):
         return lbl
 
     def _make_status_row(self, layout: "QVBoxLayout", label: str, value: str,  # type: ignore[reportInvalidTypeForm]
-                         label_bg: str) -> "QLabel":
+                         label_bg: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
         """Státusz sor LCARS színes label háttérrel."""
         row = QWidget()
         row.setStyleSheet(f"background-color: {self.PANEL_BG};")
