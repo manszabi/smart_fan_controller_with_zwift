@@ -4067,7 +4067,7 @@ class HUDWindow(QWidget):
         self._lbl_zone_label = QLabel("FAN ZONE")
         self._lbl_zone_label.setStyleSheet(
             f"background-color: {self.LCARS_CYAN}; color: #000a14; "
-            f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
+            f"font-family: '{self._font_family}'; font-size: 12pt; font-weight: bold; "
             f"padding: 2px 4px; border-radius: 4px;"
         )
         content_layout.addWidget(self._lbl_zone_label)
@@ -4076,7 +4076,7 @@ class HUDWindow(QWidget):
         self._lbl_zone.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_zone.setStyleSheet(
             f"background-color: {self._VAL_BG}; color: {self.LCARS_CYAN}; "
-            f"font-family: '{self._font_family}'; font-size: 14pt; font-weight: bold; "
+            f"font-family: '{self._font_family}'; font-size: 19pt; font-weight: bold; "
             f"padding: 3px 6px; border-radius: 4px;"
         )
         content_layout.addWidget(self._lbl_zone)
