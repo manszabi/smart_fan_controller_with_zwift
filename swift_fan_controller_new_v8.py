@@ -4029,7 +4029,7 @@ class HUDWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
         self.setWindowOpacity(0.92)
         self.setGeometry(20, 20, self._base_width, self._base_height)
-        self.setMinimumSize(220, 280)
+        self.setMinimumSize(220, 350)
         self.setStyleSheet(f"background-color: {self.BG};")
 
         # ───────── FONT ─────────
@@ -4064,8 +4064,16 @@ class HUDWindow(QWidget):
         body_layout.addWidget(content, 1)
 
         # ───────── ZÓNA KIJELZŐ ─────────
-        self._lbl_zone = self._make_row(content_layout, "FAN ZONE", "\u2013 \u2013 \u2013",
-                                         self.LCARS_CYAN, self.LCARS_CYAN)
+        self._lbl_zone_label = QLabel("FAN ZONE")
+        self._lbl_zone_label.setStyleSheet(
+            f"background-color: {self.LCARS_CYAN}; color: #000a14; "
+            f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
+            f"padding: 2px 4px; border-radius: 4px;"
+        )
+        content_layout.addWidget(self._lbl_zone_label)
+
+        self._lbl_zone = self._make_row(content_layout, "", "\u2013 \u2013 \u2013",
+                                         self.LCARS_CYAN, self._VAL_BG)
 
         # ───────── ÁLLAPOT CSÍK (tiles) ─────────
         tile_frame = QWidget(content)
@@ -4314,7 +4322,7 @@ class HUDWindow(QWidget):
         if self._resize_active:
             delta = event.globalPosition().toPoint() - self._resize_start_pos
             new_w = max(220, self._resize_start_size.width() + delta.x())
-            new_h = max(280, self._resize_start_size.height() + delta.y())
+            new_h = max(350, self._resize_start_size.height() + delta.y())
             self.resize(new_w, new_h)
             self._scale = new_w / self._base_width
             self._apply_scale()
