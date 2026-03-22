@@ -4673,9 +4673,12 @@ class HUDWindow(QWidget):
         ff = self._font_family
 
         zone_size = max(14, int(30 * s))
+        import re as _re
+        _color_match = _re.search(r"(?<!-)color:\s*([^;]+);", self._lbl_zone.styleSheet())
+        _current_color = _color_match.group(1).strip() if _color_match else self.LCARS_CYAN
         self._lbl_zone.setStyleSheet(
             f"background-color: {self._VAL_BG}; "
-            f"color: {self._lbl_zone.styleSheet().split('color:')[1].split(';')[0].strip()}; "
+            f"color: {_current_color}; "
             f"font-family: '{ff}'; font-size: {zone_size}pt; font-weight: bold; "
             f"padding: 0px 8px 6px 8px; border-radius: 4px;"
         )
