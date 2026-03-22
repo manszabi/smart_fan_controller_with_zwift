@@ -4072,8 +4072,14 @@ class HUDWindow(QWidget):
         )
         content_layout.addWidget(self._lbl_zone_label)
 
-        self._lbl_zone = self._make_row(content_layout, "", "\u2013 \u2013 \u2013",
-                                         self.LCARS_CYAN, self._VAL_BG)
+        self._lbl_zone = QLabel("\u2013 \u2013 \u2013")
+        self._lbl_zone.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_zone.setStyleSheet(
+            f"background-color: {self._VAL_BG}; color: {self.LCARS_CYAN}; "
+            f"font-family: '{self._font_family}'; font-size: 14pt; font-weight: bold; "
+            f"padding: 3px 6px; border-radius: 4px;"
+        )
+        content_layout.addWidget(self._lbl_zone)
 
         # ───────── ÁLLAPOT CSÍK (tiles) ─────────
         tile_frame = QWidget(content)
