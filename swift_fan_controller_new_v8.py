@@ -4073,7 +4073,7 @@ class HUDWindow(QWidget):
         self._lbl_zone_label.setStyleSheet(
             f"background-color: {self.LCARS_CYAN}; color: #000a14; "
             f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
-            f"padding: 2px 4px;"
+            f"padding: 2px 4px; border-radius: 4px;"
         )
         zone_layout.addWidget(self._lbl_zone_label)
 
@@ -4082,7 +4082,7 @@ class HUDWindow(QWidget):
         self._lbl_zone.setStyleSheet(
             f"background-color: {self._VAL_BG}; color: {self.LCARS_CYAN}; "
             f"font-family: '{self._font_family}'; font-size: 30pt; font-weight: bold; "
-            f"padding: 0px 8px 6px 8px;"
+            f"padding: 0px 8px 6px 8px; border-radius: 4px;"
         )
         zone_layout.addWidget(self._lbl_zone)
         content_layout.addWidget(zone_frame)
@@ -4147,7 +4147,7 @@ class HUDWindow(QWidget):
         self._opacity_label.setStyleSheet(
             f"background-color: {self.LCARS_GOLD}; color: #000a14; "
             f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
-            f"padding: 2px 4px;"
+            f"padding: 2px 4px; border-radius: 4px;"
         )
         slider_layout.addWidget(self._opacity_label)
 
@@ -4251,7 +4251,7 @@ class HUDWindow(QWidget):
         key_lbl.setStyleSheet(
             f"background-color: {label_bg}; color: #000a14; "
             f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
-            f"padding: 3px 4px;"
+            f"padding: 3px 4px; border-radius: 4px;"
         )
         row_layout.addWidget(key_lbl)
         self._row_key_labels.append(key_lbl)
@@ -4263,7 +4263,7 @@ class HUDWindow(QWidget):
         val_lbl.setStyleSheet(
             f"background-color: {self._VAL_BG}; color: {color}; "
             f"font-family: '{self._font_family}'; font-size: 14pt; font-weight: bold; "
-            f"padding: 3px 6px;"
+            f"padding: 3px 6px; border-radius: 4px;"
         )
         row_layout.addWidget(val_lbl, 1)
 
@@ -4277,7 +4277,7 @@ class HUDWindow(QWidget):
         lbl.setStyleSheet(
             f"background-color: {self.TEXT_DIM}; color: #000a14; "
             f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
-            f"padding: 2px 5px;"
+            f"padding: 2px 5px; border-radius: 4px;"
         )
         layout.addWidget(lbl, 1)
         return lbl
@@ -4296,7 +4296,7 @@ class HUDWindow(QWidget):
         key_lbl.setStyleSheet(
             f"background-color: {label_bg}; color: #000a14; "
             f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
-            f"padding: 2px 4px;"
+            f"padding: 2px 4px; border-radius: 4px;"
         )
         row_layout.addWidget(key_lbl)
         self._status_key_labels.append(key_lbl)
@@ -4308,7 +4308,7 @@ class HUDWindow(QWidget):
         val_lbl.setStyleSheet(
             f"background-color: {self._VAL_BG}; color: {self.TEXT_DIM}; "
             f"font-family: '{self._font_family}'; font-size: 11pt; "
-            f"padding: 2px 6px;"
+            f"padding: 2px 6px; border-radius: 4px;"
         )
         row_layout.addWidget(val_lbl, 1)
 
@@ -4651,13 +4651,13 @@ class HUDWindow(QWidget):
             f"background-color: {self._VAL_BG}; "
             f"color: {self._lbl_zone.styleSheet().split('color:')[1].split(';')[0].strip()}; "
             f"font-family: '{ff}'; font-size: {zone_size}pt; font-weight: bold; "
-            f"padding: 0px 8px 6px 8px;"
+            f"padding: 0px 8px 6px 8px; border-radius: 4px;"
         )
         zone_label_size = max(7, int(9 * s))
         self._lbl_zone_label.setStyleSheet(
             f"background-color: {self.LCARS_CYAN}; color: #000a14; "
             f"font-family: '{ff}'; font-size: {zone_label_size}pt; font-weight: bold; "
-            f"padding: 2px 4px;"
+            f"padding: 2px 4px; border-radius: 4px;"
         )
 
         self._header.set_scale(s)
