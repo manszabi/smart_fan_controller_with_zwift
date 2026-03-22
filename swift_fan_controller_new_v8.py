@@ -104,7 +104,7 @@ try:
 
     _PYWINAUTO_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
-    pass
+    WinAutoApp: Any = None
 
 _PYSIDE6_AVAILABLE: bool = False
 
@@ -121,7 +121,26 @@ try:
 
     _PYSIDE6_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
-    pass
+    QApplication: Any = None
+    QWidget: Any = None
+    QLabel: Any = None
+    QHBoxLayout: Any = None
+    QVBoxLayout: Any = None
+    QSlider: Any = None
+    QMenu: Any = None
+    QFrame: Any = None
+    Qt: Any = None
+    QTimer: Any = None
+    QPoint: Any = None
+    QSize: Any = None
+    QRectF: Any = None
+    QColor: Any = None
+    QPainter: Any = None
+    QBrush: Any = None
+    QFont: Any = None
+    QFontDatabase: Any = None
+    QPainterPath: Any = None
+    QMouseEvent: Any = None
 
 __version__ = "1.0.0"
 
