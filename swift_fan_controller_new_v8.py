@@ -121,26 +121,26 @@ try:
 
     _PYSIDE6_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
-    QApplication = None  # type: ignore[assignment]
-    QWidget = None  # type: ignore[assignment]
-    QLabel = None  # type: ignore[assignment]
-    QHBoxLayout = None  # type: ignore[assignment]
-    QVBoxLayout = None  # type: ignore[assignment]
-    QSlider = None  # type: ignore[assignment]
-    QMenu = None  # type: ignore[assignment]
-    QFrame = None  # type: ignore[assignment]
-    Qt = None  # type: ignore[assignment]
-    QTimer = None  # type: ignore[assignment]
-    QPoint = None  # type: ignore[assignment]
-    QSize = None  # type: ignore[assignment]
-    QRectF = None  # type: ignore[assignment]
-    QColor = None  # type: ignore[assignment]
-    QPainter = None  # type: ignore[assignment]
-    QBrush = None  # type: ignore[assignment]
-    QFont = None  # type: ignore[assignment]
-    QFontDatabase = None  # type: ignore[assignment]
-    QPainterPath = None  # type: ignore[assignment]
-    QMouseEvent = None  # type: ignore[assignment]
+    QApplication: Any = None
+    QWidget: Any = None
+    QLabel: Any = None
+    QHBoxLayout: Any = None
+    QVBoxLayout: Any = None
+    QSlider: Any = None
+    QMenu: Any = None
+    QFrame: Any = None
+    Qt: Any = None
+    QTimer: Any = None
+    QPoint: Any = None
+    QSize: Any = None
+    QRectF: Any = None
+    QColor: Any = None
+    QPainter: Any = None
+    QBrush: Any = None
+    QFont: Any = None
+    QFontDatabase: Any = None
+    QPainterPath: Any = None
+    QMouseEvent: Any = None
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import (
@@ -3326,20 +3326,20 @@ class FanController:
                     f"⏳ Zwift Launcher ablak keresése "
                     f"(próba {attempt}/{max_attempts})..."
                 )
-                app = WinAutoApp(backend="uia").connect(
+                app = WinAutoApp(backend="uia").connect(  # type: ignore[reportOptionalCall]
                     title_re="Zwift.*", timeout=30
                 )
-                window = app.top_window()
+                window = app.top_window()  # type: ignore[reportOptionalCall]
                 logger.info("Zwift Launcher ablak megtalálva.")
 
                 # "Let's Go" gomb keresése
                 print("⏳ Várakozás a 'Let's Go' gombra (frissítés esetén ez eltarthat)...")
-                button = window.child_window(
+                button = window.child_window(  # type: ignore[reportOptionalCall]
                     title="Let's Go", control_type="Button"
                 )
-                button.wait("visible", timeout=attempt_interval)
+                button.wait("visible", timeout=attempt_interval)  # type: ignore[reportOptionalCall]
                 logger.info("'Let's Go' gomb megtalálva, kattintás...")
-                button.click()
+                button.click()  # type: ignore[reportOptionalCall]
                 print("✅ 'Let's Go' gomb megnyomva, várakozás a Zwift indulására...")
                 break
 
@@ -3791,7 +3791,7 @@ class FanController:
 class LCARSHeaderWidget(QWidget):
     """LCARS fejléc widget – QPainter-rel rajzolt felső sáv."""
 
-    def __init__(self, parent: QWidget, font_family: str, scale: float = 1.0) -> None:
+    def __init__(self, parent: QWidget, font_family: str, scale: float = 1.0) -> None:  # type: ignore[reportInvalidTypeForm]
         super().__init__(parent)
         self._font_family = font_family
         self._scale = scale
@@ -3862,7 +3862,7 @@ class LCARSHeaderWidget(QWidget):
 class LCARSFooterWidget(QWidget):
     """LCARS lábléc widget – QPainter-rel rajzolt alsó sáv."""
 
-    def __init__(self, parent: QWidget, font_family: str, scale: float = 1.0) -> None:
+    def __init__(self, parent: QWidget, font_family: str, scale: float = 1.0) -> None:  # type: ignore[reportInvalidTypeForm]
         super().__init__(parent)
         self._font_family = font_family
         self._scale = scale
@@ -3935,7 +3935,7 @@ class LCARSSidebarWidget(QWidget):
 
     COLORS = ["#FF9900", "#FFCC66", "#5599FF", "#CC6699", "#9977CC", "#FFAA66"]
 
-    def __init__(self, parent: QWidget, scale: float = 1.0) -> None:
+    def __init__(self, parent: QWidget, scale: float = 1.0) -> None:  # type: ignore[reportInvalidTypeForm]
         super().__init__(parent)
         self._scale = scale
         self.setFixedWidth(max(10, int(16 * scale)))
@@ -3992,21 +3992,21 @@ class HUDWindow(QWidget):
 
     UPDATE_INTERVAL_MS = 500
 
-    def __init__(self, controller: "FanController", app: "QApplication") -> None:
+    def __init__(self, controller: "FanController", app: "QApplication") -> None:  # type: ignore[reportInvalidTypeForm]
         super().__init__()
         self._base_width = 340
         self._base_height = 460
         self._scale = 1.0
         self._ctrl = controller
         self._app = app
-        self._drag_pos: Optional[QPoint] = None
+        self._drag_pos: Optional[QPoint] = None  # type: ignore[reportInvalidTypeForm]
         self._resize_active = False
         self._resize_start_pos = QPoint()
         self._resize_start_size = QSize()
 
         # Referencia listák a skálázható label-ekhez
-        self._row_key_labels: list[QLabel] = []
-        self._status_key_labels: list[QLabel] = []
+        self._row_key_labels: list[QLabel] = []  # type: ignore[reportInvalidTypeForm]
+        self._status_key_labels: list[QLabel] = []  # type: ignore[reportInvalidTypeForm]
 
         # ───────── ABLAK BEÁLLÍTÁS ─────────
         self.setWindowTitle("LCARS Fan HUD")
@@ -4228,7 +4228,7 @@ class HUDWindow(QWidget):
     # ────────── UI SEGÉDFÜGGVÉNYEK ──────────
 
     def _make_row(self, layout: "QVBoxLayout", label: str, value: str,
-                  color: str, label_bg: str) -> "QLabel":
+                  color: str, label_bg: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
         """Telemetria sor LCARS színes label háttérrel."""
         row = QWidget()
         row.setStyleSheet(f"background-color: {self.PANEL_BG};")
@@ -4260,7 +4260,7 @@ class HUDWindow(QWidget):
         layout.addWidget(row)
         return val_lbl
 
-    def _make_tile(self, layout: "QHBoxLayout", text: str) -> "QLabel":
+    def _make_tile(self, layout: "QHBoxLayout", text: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
         """Állapot csík tile."""
         lbl = QLabel(text)
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -4273,7 +4273,7 @@ class HUDWindow(QWidget):
         return lbl
 
     def _make_status_row(self, layout: "QVBoxLayout", label: str, value: str,
-                         label_bg: str) -> "QLabel":
+                         label_bg: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
         """Státusz sor LCARS színes label háttérrel."""
         row = QWidget()
         row.setStyleSheet(f"background-color: {self.PANEL_BG};")
@@ -4355,7 +4355,7 @@ class HUDWindow(QWidget):
 
     # ────────── KONTEXTUS MENÜ ──────────
 
-    def _show_menu(self, pos: "QPoint") -> None:
+    def _show_menu(self, pos: "QPoint") -> None:  # type: ignore[reportInvalidTypeForm]
         menu = QMenu(self)
         menu.setStyleSheet(
             f"QMenu {{ background-color: #001828; color: {self.LCARS_CYAN}; "
@@ -4373,7 +4373,7 @@ class HUDWindow(QWidget):
     # ────────── LABEL FRISSÍTÉS SEGÉD ──────────
 
     @staticmethod
-    def _update_label(lbl: "QLabel", text: str, color: str) -> None:
+    def _update_label(lbl: "QLabel", text: str, color: str) -> None:  # type: ignore[reportInvalidTypeForm]
         """Label szöveg és szín frissítése stylesheet-tel."""
         import re as _re
         current = lbl.styleSheet()
@@ -4382,7 +4382,7 @@ class HUDWindow(QWidget):
         lbl.setText(text)
 
     @staticmethod
-    def _update_tile_bg(tile: "QLabel", bg: str) -> None:
+    def _update_tile_bg(tile: "QLabel", bg: str) -> None:  # type: ignore[reportInvalidTypeForm]
         """Tile háttérszín frissítése."""
         import re as _re
         current = tile.styleSheet()
