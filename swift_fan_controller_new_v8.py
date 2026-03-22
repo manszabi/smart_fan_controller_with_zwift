@@ -49,7 +49,7 @@ import os
 
 from collections import deque
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 # --- Enum-ok a magic string-ek kiváltásához ---
 # str öröklés: JSON-ból jövő string értékekkel is kompatibilis (==)
@@ -111,12 +111,12 @@ _PYSIDE6_AVAILABLE: bool = False
 try:
     from PySide6.QtWidgets import (  # type: ignore[import-untyped]
         QApplication, QWidget, QLabel, QHBoxLayout, QVBoxLayout,
-        QSlider, QMenu, QSizeGrip, QFrame,
+        QSlider, QMenu, QFrame,
     )
     from PySide6.QtCore import Qt, QTimer, QPoint, QSize, QRectF  # type: ignore[import-untyped]
     from PySide6.QtGui import (  # type: ignore[import-untyped]
-        QColor, QPainter, QPen, QBrush, QFont, QFontDatabase,
-        QPolygonF, QPainterPath, QMouseEvent, QAction, QCursor,
+        QColor, QPainter, QBrush, QFont, QFontDatabase,
+        QPainterPath, QMouseEvent,
     )
 
     _PYSIDE6_AVAILABLE = True  # type: ignore[misc]
@@ -3271,8 +3271,6 @@ class FanController:
         # támaszkodnánk.
         max_attempts = 10
         attempt_interval = 30  # másodperc próbálkozások között
-        button_clicked = False
-
         for attempt in range(1, max_attempts + 1):
             # Ha közben elindult a ZwiftApp.exe (pl. már be volt jelentkezve)
             if self._is_process_running("ZwiftApp.exe"):
@@ -3312,7 +3310,6 @@ class FanController:
                 button.wait("visible", timeout=attempt_interval)
                 logger.info("'Let's Go' gomb megtalálva, kattintás...")
                 button.click()
-                button_clicked = True
                 print("✅ 'Let's Go' gomb megnyomva, várakozás a Zwift indulására...")
                 break
 
