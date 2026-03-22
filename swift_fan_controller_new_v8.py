@@ -4029,7 +4029,7 @@ class HUDWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
         self.setWindowOpacity(0.92)
         self.setGeometry(20, 20, self._base_width, self._base_height)
-        self.setMinimumSize(220, 420)
+        self.setMinimumSize(220, 350)
         self.setStyleSheet(f"background-color: {self.BG};")
 
         # ───────── FONT ─────────
@@ -4064,30 +4064,16 @@ class HUDWindow(QWidget):
         body_layout.addWidget(content, 1)
 
         # ───────── ZÓNA KIJELZŐ ─────────
-        zone_frame = QWidget(content)
-        zone_frame.setStyleSheet(f"background-color: {self._VAL_BG};")
-        zone_layout = QVBoxLayout(zone_frame)
-        zone_layout.setContentsMargins(0, 0, 0, 0)
-        zone_layout.setSpacing(0)
-
         self._lbl_zone_label = QLabel("FAN ZONE")
         self._lbl_zone_label.setStyleSheet(
             f"background-color: {self.LCARS_CYAN}; color: #000a14; "
             f"font-family: '{self._font_family}'; font-size: 9pt; font-weight: bold; "
             f"padding: 2px 4px; border-radius: 4px;"
         )
-        zone_layout.addWidget(self._lbl_zone_label)
+        content_layout.addWidget(self._lbl_zone_label)
 
-        self._lbl_zone = QLabel("\u2013 \u2013 \u2013")
-        self._lbl_zone.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._lbl_zone.setFixedHeight(45)
-        self._lbl_zone.setStyleSheet(
-            f"background-color: {self._VAL_BG}; color: {self.LCARS_CYAN}; "
-            f"font-family: '{self._font_family}'; font-size: 30pt; font-weight: bold; "
-            f"padding: 0px 8px 6px 8px; border-radius: 4px;"
-        )
-        zone_layout.addWidget(self._lbl_zone)
-        content_layout.addWidget(zone_frame)
+        self._lbl_zone = self._make_row(content_layout, "", "\u2013 \u2013 \u2013",
+                                         self.LCARS_CYAN, self._VAL_BG)
 
         # ───────── ÁLLAPOT CSÍK (tiles) ─────────
         tile_frame = QWidget(content)
@@ -4336,7 +4322,7 @@ class HUDWindow(QWidget):
         if self._resize_active:
             delta = event.globalPosition().toPoint() - self._resize_start_pos
             new_w = max(220, self._resize_start_size.width() + delta.x())
-            new_h = max(420, self._resize_start_size.height() + delta.y())
+            new_h = max(350, self._resize_start_size.height() + delta.y())
             self.resize(new_w, new_h)
             self._scale = new_w / self._base_width
             self._apply_scale()
@@ -4672,25 +4658,6 @@ class HUDWindow(QWidget):
     def _apply_scale(self) -> None:
         s = self._scale
         ff = self._font_family
-
-        zone_size = max(14, int(30 * s))
-        zone_h = max(35, int(45 * s))
-        import re as _re
-        _color_match = _re.search(r"(?<!-)color:\s*([^;]+);", self._lbl_zone.styleSheet())
-        _current_color = _color_match.group(1).strip() if _color_match else self.LCARS_CYAN
-        self._lbl_zone.setFixedHeight(zone_h)
-        self._lbl_zone.setStyleSheet(
-            f"background-color: {self._VAL_BG}; "
-            f"color: {_current_color}; "
-            f"font-family: '{ff}'; font-size: {zone_size}pt; font-weight: bold; "
-            f"padding: 0px 8px 6px 8px; border-radius: 4px;"
-        )
-        zone_label_size = max(7, int(9 * s))
-        self._lbl_zone_label.setStyleSheet(
-            f"background-color: {self.LCARS_CYAN}; color: #000a14; "
-            f"font-family: '{ff}'; font-size: {zone_label_size}pt; font-weight: bold; "
-            f"padding: 2px 4px; border-radius: 4px;"
-        )
 
         self._header.set_scale(s)
         self._footer.set_scale(s)
