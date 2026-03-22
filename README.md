@@ -29,8 +29,8 @@ A program valós időben fogadja a teljesítmény (watt) és szívfrekvencia (bp
 - **Auto-discovery:** BLE és ANT+ eszközök automatikus felderítése és logolása
 - **Watchdog:** ANT+ USB dongle kihúzás/lemerülés automatikus detektálása és reconnect
 - **Zwift auto-launch:** automatikusan elindítja a Zwift-et ha nem fut (ZwiftLauncher.exe + "Let's Go" gomb – pywinauto)
-- **HUD:** Star Trek LCARS stílusú lebegő ablak (tkinter) – valós idejű zóna, watt, HR kijelzés
-- **Headless mód:** tkinter nélkül is fut (pl. Raspberry Pi terminálban)
+- **HUD:** Star Trek LCARS stílusú lebegő ablak (PySide6 / Qt6) – valós idejű zóna, watt, HR kijelzés
+- **Headless mód:** PySide6 nélkül is fut (pl. Raspberry Pi terminálban)
 
 ## Telepítés
 
@@ -52,6 +52,7 @@ pip install -r requirements.txt
 | `openant` | Opcionális | ANT+ kommunikáció (power meter, HR monitor) |
 | `requests` | Opcionális | Zwift API polling (`zwift_api_polling.py`, ha power/hr forrás `"zwiftudp"`) |
 | `pywinauto` | Opcionális | Zwift automatikus indítás (Windows – "Let's Go" gomb megnyomása) |
+| `PySide6` | Opcionális | HUD ablak (Star Trek LCARS stílusú Qt6 megjelenítő) |
 
 A program a rendelkezésre álló könyvtárak alapján automatikusan engedélyezi/letiltja az adatforrásokat. Nem kötelező mindet telepíteni.
 
@@ -59,12 +60,12 @@ A program a rendelkezésre álló könyvtárak alapján automatikusan engedélye
 
 ```bash
 # Alapértelmezett settings.json-nal
-python swift_fan_controller_new_v7.py
+python swift_fan_controller_new_v8.py
 
 # Vagy a példa beállítások másolása után
 cp settings.example.json settings.json
 # ... settings.json szerkesztése ...
-python swift_fan_controller_new_v7.py
+python swift_fan_controller_new_v8.py
 ```
 
 ## Konfiguráció
@@ -175,7 +176,7 @@ main()
 ├── ANTPlus-Thread* (daemon)
 │   ├── openant Node.start() – blokkoló ANT+ loop
 │   └── ANTPlus-Watchdog     – USB disconnect detektálás
-└── tkinter HUD (fő szál)
+└── PySide6 HUD (fő szál)
     └── 500ms polling → UISnapshot
 
 * = opcionális, beállítástól függően
