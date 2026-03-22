@@ -69,6 +69,15 @@ if errorlevel 1 (
     echo [OK] pywinauto telepitve
 )
 
+echo.
+echo PySide6 telepitese (HUD ablak, opcionalis)...
+python -m pip install PySide6 >nul 2>&1
+if errorlevel 1 (
+    echo [FIGYELEM] PySide6 telepitese sikertelen - HUD nelkul fog futni (headless mod)
+) else (
+    echo [OK] PySide6 telepitve
+)
+
 :: Check for settings.json
 if not exist "settings.json" (
     echo.

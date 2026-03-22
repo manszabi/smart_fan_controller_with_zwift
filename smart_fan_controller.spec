@@ -6,9 +6,9 @@ import os
 
 block_cipher = None
 
-# --- Main controller exe ---
+# --- Main controller exe (v8 – PySide6 HUD) ---
 main_a = Analysis(
-    ['swift_fan_controller_new_v7.py'],
+    ['swift_fan_controller_new_v8.py'],
     pathex=[],
     binaries=[],
     datas=[
@@ -16,8 +16,10 @@ main_a = Analysis(
         ('settings.example.jsonc', '.'),
     ],
     hiddenimports=[
-        'tkinter',
-        'tkinter.font',
+        'PySide6',
+        'PySide6.QtWidgets',
+        'PySide6.QtCore',
+        'PySide6.QtGui',
         'bleak',
         'bleak.backends.winrt',
         'bleak.backends.winrt.scanner',

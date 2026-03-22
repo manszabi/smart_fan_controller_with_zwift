@@ -33,6 +33,14 @@ if errorlevel 1 (
     echo.
 )
 
+:: Install PySide6 if needed (HUD ablak)
+python -m pip show PySide6 >nul 2>&1
+if errorlevel 1 (
+    echo PySide6 telepitese (HUD ablak)...
+    python -m pip install PySide6
+    echo.
+)
+
 echo Build inditas...
 echo.
 python -m PyInstaller smart_fan_controller.spec --noconfirm
