@@ -3269,7 +3269,6 @@ class FanController:
         # támaszkodnánk.
         max_attempts = 10
         attempt_interval = 30  # másodperc próbálkozások között
-        button_clicked = False
 
         for attempt in range(1, max_attempts + 1):
             # Ha közben elindult a ZwiftApp.exe (pl. már be volt jelentkezve)
@@ -3296,21 +3295,20 @@ class FanController:
                     f"⏳ Zwift Launcher ablak keresése "
                     f"(próba {attempt}/{max_attempts})..."
                 )
-                app = WinAutoApp(backend="uia").connect(
+                app = WinAutoApp(backend="uia").connect(  # type: ignore[possibly-undefined]
                     title_re="Zwift.*", timeout=30
                 )
-                window = app.top_window()
+                window = app.top_window()  # type: ignore[union-attr]
                 logger.info("Zwift Launcher ablak megtalálva.")
 
                 # "Let's Go" gomb keresése
                 print("⏳ Várakozás a 'Let's Go' gombra (frissítés esetén ez eltarthat)...")
-                button = window.child_window(
+                button = window.child_window(  # type: ignore[union-attr]
                     title="Let's Go", control_type="Button"
                 )
-                button.wait("visible", timeout=attempt_interval)
+                button.wait("visible", timeout=attempt_interval)  # type: ignore[union-attr]
                 logger.info("'Let's Go' gomb megtalálva, kattintás...")
-                button.click()
-                button_clicked = True
+                button.click()  # type: ignore[union-attr]
                 print("✅ 'Let's Go' gomb megnyomva, várakozás a Zwift indulására...")
                 break
 
