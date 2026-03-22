@@ -4387,7 +4387,7 @@ class HUDWindow(QWidget):
         """Label szöveg és szín frissítése stylesheet-tel."""
         import re as _re
         current = lbl.styleSheet()
-        new_ss = _re.sub(r"color:\s*[^;]+;", f"color: {color};", current, count=1)
+        new_ss = _re.sub(r"(?<!-)color:\s*[^;]+;", f"color: {color};", current, count=1)
         lbl.setStyleSheet(new_ss)
         lbl.setText(text)
 
