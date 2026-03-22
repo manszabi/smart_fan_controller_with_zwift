@@ -3818,10 +3818,13 @@ class LCARSHeaderWidget(QWidget):
         bar_h = max(8, int(14 * s))
         sw = max(10, int(16 * s))
         R = max(14, int(26 * s))
+        corner_r = max(12, int(18 * s))
 
-        # Fő narancssárga sáv ívvel
+        # Fő narancssárga sáv ívvel + lekerekített bal felső sarok
         path = QPainterPath()
-        path.moveTo(0, 0)
+        path.moveTo(0, corner_r)
+        path.arcTo(QRectF(0, 0, 2 * corner_r, 2 * corner_r), 90, 90)
+        path.lineTo(0, 0)
         path.lineTo(w - 6, 0)
         path.lineTo(w - 6, bar_h)
         for i in range(21):
@@ -3833,6 +3836,12 @@ class LCARSHeaderWidget(QWidget):
         path.lineTo(0, ch)
         path.closeSubpath()
         p.fillPath(path, QBrush(QColor(HUDWindow.LCARS_ORANGE)))
+
+        # Bal felső sarok háttér kitöltés (ív mögött)
+        bg_path = QPainterPath()
+        bg_path.addRect(QRectF(0, 0, corner_r, corner_r))
+        bg_path -= path
+        p.fillPath(bg_path, QBrush(QColor(HUDWindow.BG)))
 
         # Cím szöveg
         title_size = max(8, int(12 * s))
@@ -3881,8 +3890,9 @@ class LCARSFooterWidget(QWidget):
         sw = max(10, int(16 * s))
         R = max(14, int(26 * s))
         bar_top = fh - bar_h
+        corner_r = max(12, int(18 * s))
 
-        # Fő kék sáv ívvel
+        # Fő kék sáv ívvel + lekerekített bal alsó sarok
         path = QPainterPath()
         path.moveTo(0, 0)
         path.lineTo(sw, 0)
@@ -3893,9 +3903,17 @@ class LCARSFooterWidget(QWidget):
             path.lineTo(px, py)
         path.lineTo(w - 6, bar_top)
         path.lineTo(w - 6, fh)
-        path.lineTo(0, fh)
+        path.lineTo(corner_r, fh)
+        path.arcTo(QRectF(0, fh - 2 * corner_r, 2 * corner_r, 2 * corner_r), 270, -90)
+        path.lineTo(0, 0)
         path.closeSubpath()
         p.fillPath(path, QBrush(QColor(HUDWindow.LCARS_BLUE)))
+
+        # Bal alsó sarok háttér kitöltés (ív mögött)
+        bg_path = QPainterPath()
+        bg_path.addRect(QRectF(0, fh - corner_r, corner_r, corner_r))
+        bg_path -= path
+        p.fillPath(bg_path, QBrush(QColor(HUDWindow.BG)))
 
         # Szegmensek
         seg_x = sw + R + 8
@@ -3993,6 +4011,12 @@ class HUDWindow(QWidget):
         # Referencia listák a skálázható label-ekhez
         self._row_key_labels: list[QLabel] = []  # type: ignore[reportInvalidTypeForm]
         self._status_key_labels: list[QLabel] = []  # type: ignore[reportInvalidTypeForm]
+
+        # Flash effekt: előző értékek és flash számlálók
+        self._prev_power: Optional[float] = None
+        self._prev_hr: Optional[float] = None
+        self._flash_power: int = 0  # hátralévő flash ciklusok
+        self._flash_hr: int = 0
 
         # ───────── ABLAK BEÁLLÍTÁS ─────────
         self.setWindowTitle("LCARS Fan HUD")
@@ -4400,15 +4424,38 @@ class HUDWindow(QWidget):
 
                 self._update_label(self._lbl_zone, zone_txt, zone_color)
 
+                # Power – flash ha változott
+                if power is not None and power != self._prev_power:
+                    self._flash_power = 2  # 2 ciklus = ~1s villanás
+                self._prev_power = power
+
+                if self._flash_power > 0:
+                    self._flash_power -= 1
+                    power_color = "#FFFFFF" if self._flash_power % 2 == 1 else self.LCARS_GOLD
+                else:
+                    power_color = self.LCARS_GOLD if power is not None else self.TEXT_DIM
+
                 self._update_label(
                     self._lbl_power,
                     "\u2013 \u2013 \u2013" if power is None else f"{power:.0f} W",
-                    self.LCARS_GOLD if power is not None else self.TEXT_DIM,
+                    power_color,
                 )
+
+                # HR – flash ha változott
+                if hr is not None and hr != self._prev_hr:
+                    self._flash_hr = 2
+                self._prev_hr = hr
+
+                if self._flash_hr > 0:
+                    self._flash_hr -= 1
+                    hr_color = "#FFFFFF" if self._flash_hr % 2 == 1 else self.LCARS_RED
+                else:
+                    hr_color = self.LCARS_RED if hr is not None else self.TEXT_DIM
+
                 self._update_label(
                     self._lbl_hr,
                     "\u2013 \u2013 \u2013" if hr is None else f"{hr:.0f} BPM",
-                    self.LCARS_RED if hr is not None else self.TEXT_DIM,
+                    hr_color,
                 )
 
             # BLE fan
