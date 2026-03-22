@@ -49,7 +49,7 @@ import os
 
 from collections import deque
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 # --- Enum-ok a magic string-ek kiváltásához ---
 # str öröklés: JSON-ból jövő string értékekkel is kompatibilis (==)
@@ -141,6 +141,17 @@ except ImportError:
     QFontDatabase: Any = None
     QPainterPath: Any = None
     QMouseEvent: Any = None
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import (
+        QApplication, QWidget, QLabel, QHBoxLayout, QVBoxLayout,
+        QSlider, QMenu, QFrame,
+    )
+    from PySide6.QtCore import Qt, QTimer, QPoint, QSize, QRectF
+    from PySide6.QtGui import (
+        QColor, QPainter, QBrush, QFont, QFontDatabase,
+        QPainterPath, QMouseEvent,
+    )
 
 __version__ = "1.0.0"
 
