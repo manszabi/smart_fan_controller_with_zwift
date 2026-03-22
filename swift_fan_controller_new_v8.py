@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownParameterType=false
+# pyright: reportUnknownArgumentType=false
 from __future__ import annotations
 
 """
@@ -4227,8 +4231,8 @@ class HUDWindow(QWidget):
 
     # ────────── UI SEGÉDFÜGGVÉNYEK ──────────
 
-    def _make_row(self, layout: "QVBoxLayout", label: str, value: str,
-                  color: str, label_bg: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
+    def _make_row(self, layout: "QVBoxLayout", label: str, value: str,  # type: ignore[reportInvalidTypeForm]
+                  color: str, label_bg: str) -> "QLabel":
         """Telemetria sor LCARS színes label háttérrel."""
         row = QWidget()
         row.setStyleSheet(f"background-color: {self.PANEL_BG};")
@@ -4272,8 +4276,8 @@ class HUDWindow(QWidget):
         layout.addWidget(lbl, 1)
         return lbl
 
-    def _make_status_row(self, layout: "QVBoxLayout", label: str, value: str,
-                         label_bg: str) -> "QLabel":  # type: ignore[reportInvalidTypeForm]
+    def _make_status_row(self, layout: "QVBoxLayout", label: str, value: str,  # type: ignore[reportInvalidTypeForm]
+                         label_bg: str) -> "QLabel":
         """Státusz sor LCARS színes label háttérrel."""
         row = QWidget()
         row.setStyleSheet(f"background-color: {self.PANEL_BG};")
