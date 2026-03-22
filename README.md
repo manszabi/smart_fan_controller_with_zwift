@@ -28,6 +28,7 @@ A program valós időben fogadja a teljesítmény (watt) és szívfrekvencia (bp
 - **Adaptív cooldown:** zóna csökkentésnél várakozás (felezés nagy esésnél, duplázás visszaemelkedésnél)
 - **Auto-discovery:** BLE és ANT+ eszközök automatikus felderítése és logolása
 - **Watchdog:** ANT+ USB dongle kihúzás/lemerülés automatikus detektálása és reconnect
+- **Zwift auto-launch:** automatikusan elindítja a Zwift-et ha nem fut (ZwiftLauncher.exe + "Let's Go" gomb – pywinauto)
 - **HUD:** Star Trek LCARS stílusú lebegő ablak (tkinter) – valós idejű zóna, watt, HR kijelzés
 - **Headless mód:** tkinter nélkül is fut (pl. Raspberry Pi terminálban)
 
@@ -50,6 +51,7 @@ pip install -r requirements.txt
 | `bleak` | Opcionális | BLE kommunikáció (ventilátor + BLE szenzorok) |
 | `openant` | Opcionális | ANT+ kommunikáció (power meter, HR monitor) |
 | `requests` | Opcionális | Zwift API polling (`zwift_api_polling.py`, ha power/hr forrás `"zwiftudp"`) |
+| `pywinauto` | Opcionális | Zwift automatikus indítás (Windows – "Let's Go" gomb megnyomása) |
 
 A program a rendelkezésre álló könyvtárak alapján automatikusan engedélyezi/letiltja az adatforrásokat. Nem kötelező mindet telepíteni.
 

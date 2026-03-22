@@ -66,6 +66,8 @@
     "ble_hr_reconnect_interval": 5,
     "ble_hr_max_retries": 10,
     "zwift_udp_port": 7878,
-    "zwift_udp_host": "127.0.0.1"
+    "zwift_udp_host": "127.0.0.1",
+    "zwift_auto_launch": true,
+    "zwift_launcher_path": null
   }
 }

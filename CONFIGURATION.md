@@ -165,6 +165,23 @@ Ha `power_source` vagy `hr_source` értéke `"zwiftudp"`, a program automatikusa
 
 Ha a `zwift_api_polling.py` nem küld adatot, a szokásos dropout logika (ventilátor leállítása) lép életbe.
 
+### Zwift automatikus indítás
+
+| Mező | Típus | Értékek | Alapértelmezett | Leírás |
+|------|-------|---------|-----------------|--------|
+| `zwift_auto_launch` | bool | true/false | true | Ha true, a program automatikusan elindítja a Zwift-et ha az nem fut. |
+| `zwift_launcher_path` | string/null | – | null | ZwiftLauncher.exe egyedi útvonala. `null` → automatikus keresés (Registry + ismert útvonalak). |
+
+**Működés:** ha a `ZwiftApp.exe` nem fut és `zwift_auto_launch` értéke `true`:
+
+1. A program megkeresi a `ZwiftLauncher.exe`-t (Registry → ismert útvonalak → `zwift_launcher_path` felülírás)
+2. Elindítja a launchert
+3. Ha a `pywinauto` telepítve van: automatikusan megvárja a „Let's Go" gombot (frissítés esetén akár 5 percet is), majd rákattint
+4. Ha a `pywinauto` nincs telepítve: a program megvárja hogy a felhasználó manuálisan kattintson a „Let's Go" gombra (max 3 perc)
+5. Megvárja a `ZwiftApp.exe` elindulását
+
+**Telepítés:** `pip install pywinauto` (opcionális – nélküle manuális kattintás szükséges).
+
 ---
 
 ## Cooldown logika

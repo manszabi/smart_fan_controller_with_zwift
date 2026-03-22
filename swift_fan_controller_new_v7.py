@@ -98,6 +98,14 @@ try:
 except ImportError:
     pass
 
+_PYWINAUTO_AVAILABLE: bool = False
+try:
+    from pywinauto import Application as WinAutoApp  # type: ignore[import-untyped]
+
+    _PYWINAUTO_AVAILABLE = True  # type: ignore[misc]
+except ImportError:
+    pass
+
 _TKINTER_AVAILABLE: bool = False
 
 if TYPE_CHECKING:
@@ -191,6 +199,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "ble_hr_max_retries": 10,
         "zwift_udp_port": 7878,
         "zwift_udp_host": "127.0.0.1",
+        "zwift_auto_launch": True,
+        "zwift_launcher_path": None,
     },
 }
 
@@ -3085,6 +3095,212 @@ class FanController:
             f"tasks={len(self._tasks)})"
         )
 
+    # ----------------------------------------------------------
+    # Zwift alkalmazás automatikus indítása
+    # ----------------------------------------------------------
+
+    @staticmethod
+    def _is_process_running(process_name: str) -> bool:
+        """Ellenőrzi, hogy egy adott nevű Windows process fut-e.
+
+        A ``tasklist`` parancsot használja, ``psutil`` nélkül.
+        """
+        if _platform.system() != "Windows":
+            return False
+        try:
+            result = subprocess.run(
+                ["tasklist", "/FI", f"IMAGENAME eq {process_name}", "/NH"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return process_name.lower() in result.stdout.lower()
+        except (subprocess.TimeoutExpired, OSError):
+            return False
+
+    @staticmethod
+    def _find_zwift_launcher() -> Optional[str]:
+        """Megkeresi a ZwiftLauncher.exe útvonalát.
+
+        Keresési sorrend:
+          1. Windows Registry (Uninstall kulcsok)
+          2. Ismert telepítési útvonalak
+        """
+        if _platform.system() != "Windows":
+            return None
+
+        # --- 1. Registry keresés ---
+        try:
+            import winreg
+
+            uninstall_key = (
+                r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+            )
+            for root_key in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+                for view_flag in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+                    try:
+                        with winreg.OpenKey(
+                            root_key, uninstall_key, 0, winreg.KEY_READ | view_flag
+                        ) as key:
+                            i = 0
+                            while True:
+                                try:
+                                    subkey_name = winreg.EnumKey(key, i)
+                                    i += 1
+                                    with winreg.OpenKey(key, subkey_name) as subkey:
+                                        try:
+                                            display_name = winreg.QueryValueEx(
+                                                subkey, "DisplayName"
+                                            )[0]
+                                        except OSError:
+                                            continue
+                                        if "zwift" not in str(display_name).lower():
+                                            continue
+                                        try:
+                                            install_loc = winreg.QueryValueEx(
+                                                subkey, "InstallLocation"
+                                            )[0]
+                                        except OSError:
+                                            continue
+                                        launcher = os.path.join(
+                                            str(install_loc), "ZwiftLauncher.exe"
+                                        )
+                                        if os.path.isfile(launcher):
+                                            return launcher
+                                except OSError:
+                                    break
+                    except OSError:
+                        continue
+        except ImportError:
+            pass  # winreg nem elérhető (nem Windows)
+
+        # --- 2. Ismert útvonalak ---
+        known_paths = [
+            os.path.join(
+                os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+                "Zwift", "ZwiftLauncher.exe",
+            ),
+            os.path.join(
+                os.environ.get("ProgramFiles", r"C:\Program Files"),
+                "Zwift", "ZwiftLauncher.exe",
+            ),
+        ]
+        for path in known_paths:
+            if os.path.isfile(path):
+                return path
+
+        return None
+
+    def _ensure_zwift_running(self) -> None:
+        """Biztosítja, hogy a Zwift alkalmazás fut.
+
+        Ha a ZwiftApp.exe nem fut:
+          1. Megkeresi és elindítja a ZwiftLauncher.exe-t
+          2. pywinauto segítségével megvárja a launcher ablakot
+          3. Kezeli az esetleges frissítést (vár amíg a "Let's Go" gomb megjelenik)
+          4. Rákattint a "Let's Go" gombra
+          5. Megvárja amíg a ZwiftApp.exe elindul
+        """
+        ds = self.settings.get("datasource", {})
+        if not ds.get("zwift_auto_launch", True):
+            logger.info("Zwift auto-launch kikapcsolva a beállításokban.")
+            return
+
+        if _platform.system() != "Windows":
+            logger.info("Zwift auto-launch csak Windows-on támogatott.")
+            return
+
+        # Már fut?
+        if self._is_process_running("ZwiftApp.exe"):
+            logger.info("ZwiftApp.exe már fut, auto-launch kihagyva.")
+            return
+
+        # Launcher útvonal meghatározása
+        launcher_path: Optional[str] = ds.get("zwift_launcher_path")
+        if not launcher_path:
+            launcher_path = self._find_zwift_launcher()
+        if not launcher_path:
+            logger.warning(
+                "ZwiftLauncher.exe nem található! "
+                "Állítsd be a 'zwift_launcher_path' értéket a settings.json-ben."
+            )
+            return
+
+        if not os.path.isfile(launcher_path):
+            logger.warning(f"ZwiftLauncher.exe nem található: {launcher_path}")
+            return
+
+        logger.info(f"Zwift indítása: {launcher_path}")
+        print(f"🚀 Zwift indítása: {launcher_path}")
+
+        # Launcher indítása
+        try:
+            subprocess.Popen(
+                [launcher_path],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as exc:
+            logger.error(f"ZwiftLauncher.exe indítása sikertelen: {exc}")
+            return
+
+        # UI automatizáció (pywinauto)
+        if not _PYWINAUTO_AVAILABLE:
+            logger.warning(
+                "pywinauto nincs telepítve – a 'Let's Go' gombra manuálisan kell "
+                "kattintani. Telepítés: pip install pywinauto"
+            )
+            # Fallback: egyszerűen várunk a ZwiftApp.exe megjelenésére
+            print("⏳ Várakozás a ZwiftApp.exe indulására (kattints a 'Let's Go' gombra)...")
+            for _ in range(180):  # max 3 perc
+                time.sleep(2)
+                if self._is_process_running("ZwiftApp.exe"):
+                    logger.info("ZwiftApp.exe elindult.")
+                    print("✅ ZwiftApp.exe elindult!")
+                    return
+            logger.warning("ZwiftApp.exe nem indult el 3 perc alatt.")
+            print("⚠️  ZwiftApp.exe nem indult el 3 perc alatt.")
+            return
+
+        # --- pywinauto automatizáció ---
+        try:
+            print("⏳ Várakozás a Zwift Launcher ablakra...")
+            # Várjuk a launcher ablakot (max 60s)
+            app = WinAutoApp(backend="uia").connect(
+                title_re="Zwift.*", timeout=60
+            )
+            window = app.top_window()
+            logger.info("Zwift Launcher ablak megtalálva.")
+
+            # "Let's Go" gomb keresése és kattintás
+            # A gomb megjelenhet késve ha a launcher frissít
+            print("⏳ Várakozás a 'Let's Go' gombra (frissítés esetén ez eltarthat)...")
+            button = window.child_window(title="Let's Go", control_type="Button")
+            button.wait("visible", timeout=300)  # max 5 perc frissítésre
+            logger.info("'Let's Go' gomb megtalálva, kattintás...")
+            button.click()
+            print("✅ 'Let's Go' gomb megnyomva, várakozás a Zwift indulására...")
+
+        except Exception as exc:
+            logger.warning(
+                f"Zwift Launcher UI automatizáció sikertelen: {exc}. "
+                f"Kattints manuálisan a 'Let's Go' gombra."
+            )
+            print(f"⚠️  Launcher automatizáció sikertelen: {exc}")
+            print("    Kattints manuálisan a 'Let's Go' gombra!")
+
+        # Várakozás a ZwiftApp.exe megjelenésére (akár manuális, akár auto kattintás után)
+        print("⏳ Várakozás a ZwiftApp.exe indulására...")
+        for _ in range(120):  # max 4 perc
+            time.sleep(2)
+            if self._is_process_running("ZwiftApp.exe"):
+                logger.info("ZwiftApp.exe sikeresen elindult.")
+                print("✅ ZwiftApp.exe elindult!")
+                return
+        logger.warning("ZwiftApp.exe nem indult el 4 perc alatt.")
+        print("⚠️  ZwiftApp.exe nem indult el 4 perc alatt.")
+
     def _start_zwift_subprocess(self, script_name: str) -> None:
         """Elindít egy Zwift subprocess-t (zwift_api_polling).
 
@@ -3321,6 +3537,9 @@ class FanController:
             hr_source == DataSource.ZWIFTUDP and hr_enabled
         )
         if needs_zwift:
+            # Zwift alkalmazás automatikus indítása (ha szükséges)
+            self._ensure_zwift_running()
+
             # Zwift API polling subprocess indítása
             self._start_zwift_subprocess("zwift_api_polling")
 
