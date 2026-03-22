@@ -104,7 +104,7 @@ try:
 
     _PYWINAUTO_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
-    WinAutoApp: Any = None
+    WinAutoApp = None  # type: ignore[assignment]
 
 _PYSIDE6_AVAILABLE: bool = False
 
@@ -121,26 +121,26 @@ try:
 
     _PYSIDE6_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
-    QApplication: Any = None
-    QWidget: Any = None
-    QLabel: Any = None
-    QHBoxLayout: Any = None
-    QVBoxLayout: Any = None
-    QSlider: Any = None
-    QMenu: Any = None
-    QFrame: Any = None
-    Qt: Any = None
-    QTimer: Any = None
-    QPoint: Any = None
-    QSize: Any = None
-    QRectF: Any = None
-    QColor: Any = None
-    QPainter: Any = None
-    QBrush: Any = None
-    QFont: Any = None
-    QFontDatabase: Any = None
-    QPainterPath: Any = None
-    QMouseEvent: Any = None
+    QApplication = None  # type: ignore[assignment]
+    QWidget = None  # type: ignore[assignment]
+    QLabel = None  # type: ignore[assignment]
+    QHBoxLayout = None  # type: ignore[assignment]
+    QVBoxLayout = None  # type: ignore[assignment]
+    QSlider = None  # type: ignore[assignment]
+    QMenu = None  # type: ignore[assignment]
+    QFrame = None  # type: ignore[assignment]
+    Qt = None  # type: ignore[assignment]
+    QTimer = None  # type: ignore[assignment]
+    QPoint = None  # type: ignore[assignment]
+    QSize = None  # type: ignore[assignment]
+    QRectF = None  # type: ignore[assignment]
+    QColor = None  # type: ignore[assignment]
+    QPainter = None  # type: ignore[assignment]
+    QBrush = None  # type: ignore[assignment]
+    QFont = None  # type: ignore[assignment]
+    QFontDatabase = None  # type: ignore[assignment]
+    QPainterPath = None  # type: ignore[assignment]
+    QMouseEvent = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import (
