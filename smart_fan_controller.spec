@@ -44,6 +44,8 @@ main_a = Analysis(
         'subprocess',
         'urllib.request',
         'ctypes',
+        'pywinauto',
+        'pywinauto.application',
     ],
     hookspath=[],
     hooksconfig={},

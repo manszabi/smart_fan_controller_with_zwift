@@ -17,6 +17,9 @@ openant>=1.0.0
 # --- Zwift API polling (zwiftudp adatforrás, zwift_api_polling.py) ---
 requests>=2.28.0
 
+# --- Zwift auto-launch (Windows UI automatizáció, opcionális) ---
+pywinauto>=0.6.8
+
 # --- Standard library (nem kell telepíteni, referencia) ---
 # asyncio, threading, tkinter, json, signal, subprocess, abc,
 # collections, dataclasses, enum, math, logging, time, atexit, os, sys

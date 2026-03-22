@@ -548,29 +548,29 @@ def run_polling_loop(
             continue
 
         except requests.exceptions.ConnectionError as exc:
-            consecutive_errors += 1
+            consecutive_errors = consecutive_errors + 1
             print(
                 f"\n⚠️  Hálózati hiba (#{consecutive_errors}) / "
                 f"Network error (#{consecutive_errors}): {exc}"
             )
-            backoff = min(30.0, 2.0 ** consecutive_errors)
+            backoff: float = min(30.0, 2.0 ** consecutive_errors)
             stop_event.wait(backoff)
             continue
 
         except requests.exceptions.HTTPError as exc:
-            consecutive_errors += 1
+            consecutive_errors = consecutive_errors + 1
             print(f"\n⚠️  HTTP hiba / HTTP error: {exc}")
-            backoff = min(30.0, 2.0 ** consecutive_errors)
+            backoff: float = min(30.0, 2.0 ** consecutive_errors)
             stop_event.wait(backoff)
             continue
 
         except Exception as exc:  # noqa: BLE001
-            consecutive_errors += 1
+            consecutive_errors = consecutive_errors + 1
             print(f"\n⚠️  Váratlan hiba / Unexpected error: {exc}")
             if debug:
                 import traceback
                 traceback.print_exc()
-            backoff = min(30.0, 2.0 ** consecutive_errors)
+            backoff: float = min(30.0, 2.0 ** consecutive_errors)
             stop_event.wait(backoff)
             continue
 
