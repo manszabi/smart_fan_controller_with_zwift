@@ -4017,6 +4017,7 @@ class HUDWindow(QWidget):
         self._prev_hr: Optional[float] = None
         self._flash_power: int = 0  # hátralévő flash ciklusok
         self._flash_hr: int = 0
+        self._flash_ble_tick: int = 0  # folyamatos villogás számláló
 
         # ───────── ABLAK BEÁLLÍTÁS ─────────
         self.setWindowTitle("LCARS Fan HUD")
@@ -4458,16 +4459,21 @@ class HUDWindow(QWidget):
                     hr_color,
                 )
 
-            # BLE fan
+            # BLE fan – villogás ONLINE/OFFLINE/PIN FAIL állapotoknál
+            self._flash_ble_tick += 1
+            flash_white = self._flash_ble_tick % 2 == 0
             if ble_fan is not None:
                 if ble_fan.auth_failed:
-                    self._update_label(self._lbl_ble, "PIN FAIL", self.LCARS_GOLD)
+                    c = "#FFFFFF" if flash_white else self.LCARS_GOLD
+                    self._update_label(self._lbl_ble, "PIN FAIL", c)
                 elif ble_fan.is_connected:
                     self._update_label(self._lbl_ble, "ONLINE", self.LCARS_CYAN)
                 else:
-                    self._update_label(self._lbl_ble, "OFFLINE", self.LCARS_RED)
+                    c = "#FFFFFF" if flash_white else self.LCARS_RED
+                    self._update_label(self._lbl_ble, "OFFLINE", c)
             else:
-                self._update_label(self._lbl_ble, "DISABLED", self.TEXT_DIM)
+                c = "#FFFFFF" if flash_white else self.TEXT_DIM
+                self._update_label(self._lbl_ble, "DISABLED", c)
 
             # BLE szenzorok
             ds = self._ctrl.settings["datasource"]
