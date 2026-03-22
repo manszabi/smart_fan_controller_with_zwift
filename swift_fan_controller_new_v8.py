@@ -4601,47 +4601,56 @@ class HUDWindow(QWidget):
                     self._lbl_cool, "\u2013 \u2013 \u2013", self.TEXT_DIM
                 )
 
-            # ── Állapot csík frissítése ──
+            # ── Állapot csík frissítése (aktív = villogó háttér) ──
             zpi = self._ctrl.settings["power_zones"].get(
                 "zero_power_immediate", False
             )
-            self._update_tile_bg(
-                self._tile_zero_imm, self.LCARS_CYAN if zpi else self.TEXT_DIM
-            )
+            if zpi:
+                bg = "#FFFFFF" if flash_white else self.LCARS_CYAN
+            else:
+                bg = self.TEXT_DIM
+            self._update_tile_bg(self._tile_zero_imm, bg)
 
             zhi = self._ctrl.settings["heart_rate_zones"].get(
                 "zero_hr_immediate", False
             )
-            self._update_tile_bg(
-                self._tile_zero_hr_imm, self.LCARS_CYAN if zhi else self.TEXT_DIM
-            )
+            if zhi:
+                bg = "#FFFFFF" if flash_white else self.LCARS_CYAN
+            else:
+                bg = self.TEXT_DIM
+            self._update_tile_bg(self._tile_zero_hr_imm, bg)
 
             zone_mode_val = self._ctrl.settings["heart_rate_zones"].get(
                 "zone_mode", ZoneMode.POWER_ONLY
             )
             hw = zone_mode_val == ZoneMode.HIGHER_WINS
-            self._update_tile_bg(
-                self._tile_higher_wins, self.LCARS_ORANGE if hw else self.TEXT_DIM
-            )
+            if hw:
+                bg = "#FFFFFF" if flash_white else self.LCARS_ORANGE
+            else:
+                bg = self.TEXT_DIM
+            self._update_tile_bg(self._tile_higher_wins, bg)
 
-            self._update_tile_bg(
-                self._tile_ant,
-                self.LCARS_PURPLE if (power_ant or hr_ant) else self.TEXT_DIM,
-            )
+            if power_ant or hr_ant:
+                bg = "#FFFFFF" if flash_white else self.LCARS_PURPLE
+            else:
+                bg = self.TEXT_DIM
+            self._update_tile_bg(self._tile_ant, bg)
 
-            self._update_tile_bg(
-                self._tile_ble,
-                self.LCARS_BLUE if (power_ble or hr_ble) else self.TEXT_DIM,
-            )
+            if power_ble or hr_ble:
+                bg = "#FFFFFF" if flash_white else self.LCARS_BLUE
+            else:
+                bg = self.TEXT_DIM
+            self._update_tile_bg(self._tile_ble, bg)
 
             if cool is not None:
                 cd_active, _ = cool.snapshot()
-                self._update_tile_bg(
-                    self._tile_cooldown,
-                    self.LCARS_GOLD if cd_active else self.TEXT_DIM,
-                )
+                if cd_active:
+                    bg = "#FFFFFF" if flash_white else self.LCARS_GOLD
+                else:
+                    bg = self.TEXT_DIM
             else:
-                self._update_tile_bg(self._tile_cooldown, self.TEXT_DIM)
+                bg = self.TEXT_DIM
+            self._update_tile_bg(self._tile_cooldown, bg)
 
         except Exception as exc:
             logger.warning(f"HUD _update hiba: {exc}")
