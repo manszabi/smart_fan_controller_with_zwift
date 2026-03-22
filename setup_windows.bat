@@ -59,6 +59,16 @@ if errorlevel 1 (
     echo [OK] PyInstaller telepitve
 )
 
+echo.
+echo pywinauto telepitese (Zwift auto-launch, opcionalis)...
+python -m pip install pywinauto >nul 2>&1
+if errorlevel 1 (
+    echo [FIGYELEM] pywinauto telepitese sikertelen - Zwift auto-launch nem lesz elerheto
+    echo           A program pywinauto nelkul is mukodik, de manualisan kell kattintani a Let's Go gombra.
+) else (
+    echo [OK] pywinauto telepitve
+)
+
 :: Check for settings.json
 if not exist "settings.json" (
     echo.
@@ -69,6 +79,7 @@ if not exist "settings.json" (
         echo [OK] settings.json letrehozva - szerkeszd a sajat beallitasaiddal!
         echo      Zwift forrashoz allitsd be: power_source: "zwiftudp"
         echo      A zwift_api_polling.py automatikusan indul (bejelentkezes szukseges).
+        echo      Zwift auto-launch: a program automatikusan elinditja a Zwift-et ha nem fut.
     ) else (
         echo [FIGYELEM] Nem sikerult masolni. Hozd letre manuálisan a settings.json-t!
     )

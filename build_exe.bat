@@ -25,6 +25,14 @@ if errorlevel 1 (
     echo.
 )
 
+:: Install pywinauto if needed (Zwift auto-launch)
+python -m pip show pywinauto >nul 2>&1
+if errorlevel 1 (
+    echo pywinauto telepitese (Zwift auto-launch)...
+    python -m pip install pywinauto
+    echo.
+)
+
 echo Build inditas...
 echo.
 python -m PyInstaller smart_fan_controller.spec --noconfirm
