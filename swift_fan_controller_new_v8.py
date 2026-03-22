@@ -3822,9 +3822,7 @@ class LCARSHeaderWidget(QWidget):
 
         # Fő narancssárga sáv ívvel + lekerekített bal felső sarok
         path = QPainterPath()
-        path.moveTo(0, corner_r)
-        path.arcTo(QRectF(0, 0, 2 * corner_r, 2 * corner_r), 90, 90)
-        path.lineTo(0, 0)
+        path.moveTo(corner_r, 0)
         path.lineTo(w - 6, 0)
         path.lineTo(w - 6, bar_h)
         for i in range(21):
@@ -3834,6 +3832,8 @@ class LCARSHeaderWidget(QWidget):
             path.lineTo(px, py)
         path.lineTo(sw, ch)
         path.lineTo(0, ch)
+        path.lineTo(0, corner_r)
+        path.arcTo(QRectF(0, 0, 2 * corner_r, 2 * corner_r), 180, -90)
         path.closeSubpath()
         p.fillPath(path, QBrush(QColor(HUDWindow.LCARS_ORANGE)))
 
