@@ -3851,15 +3851,6 @@ class LCARSHeaderWidget(QWidget):
         p.drawText(int(w - badge_w - 8), 1, badge_w, bar_h - 3,
                     Qt.AlignmentFlag.AlignCenter, "v1.0.0")
 
-        # Külső lekerekített sarok (felső-bal)
-        r = max(12, int(18 * s))
-        p.fillRect(0, 0, r, r, QColor(HUDWindow.BG))
-        arc_path = QPainterPath()
-        arc_path.moveTo(0, r)
-        arc_path.arcTo(QRectF(0, 0, 2 * r, 2 * r), 90, 90)
-        arc_path.lineTo(0, r)
-        p.fillPath(arc_path, QBrush(QColor(HUDWindow.LCARS_ORANGE)))
-
         p.end()
 
 
@@ -3921,15 +3912,6 @@ class LCARSFooterWidget(QWidget):
         p.setPen(QColor(HUDWindow.LCARS_CYAN_DIM))
         p.drawText(int(sw + R), 0, int(w - 6 - sw - R), bar_top,
                     Qt.AlignmentFlag.AlignCenter, "STARFLEET CYCLING DIV")
-
-        # Külső lekerekített sarok (alsó-bal)
-        r = max(12, int(18 * s))
-        p.fillRect(0, fh - r, r, r, QColor(HUDWindow.BG))
-        arc_path = QPainterPath()
-        arc_path.moveTo(0, fh - r)
-        arc_path.arcTo(QRectF(0, fh - 2 * r, 2 * r, 2 * r), 180, 90)
-        arc_path.lineTo(0, fh - r)
-        p.fillPath(arc_path, QBrush(QColor(HUDWindow.LCARS_BLUE)))
 
         p.end()
 
