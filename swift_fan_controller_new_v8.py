@@ -4467,8 +4467,7 @@ class HUDWindow(QWidget):
                     c = "#FFFFFF" if flash_white else self.LCARS_GOLD
                     self._update_label(self._lbl_ble, "PIN FAIL", c)
                 elif ble_fan.is_connected:
-                    c = "#FFFFFF" if flash_white else self.LCARS_CYAN
-                    self._update_label(self._lbl_ble, "ONLINE", c)
+                    self._update_label(self._lbl_ble, "ONLINE", self.LCARS_CYAN)
                 else:
                     c = "#FFFFFF" if flash_white else self.LCARS_RED
                     self._update_label(self._lbl_ble, "OFFLINE", c)
