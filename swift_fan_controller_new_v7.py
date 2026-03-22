@@ -3253,53 +3253,97 @@ class FanController:
             )
             # Fallback: egyszerűen várunk a ZwiftApp.exe megjelenésére
             print("⏳ Várakozás a ZwiftApp.exe indulására (kattints a 'Let's Go' gombra)...")
-            for _ in range(180):  # max 3 perc
+            for _ in range(180):  # max 6 perc
                 time.sleep(2)
                 if self._is_process_running("ZwiftApp.exe"):
                     logger.info("ZwiftApp.exe elindult.")
                     print("✅ ZwiftApp.exe elindult!")
                     return
-            logger.warning("ZwiftApp.exe nem indult el 3 perc alatt.")
-            print("⚠️  ZwiftApp.exe nem indult el 3 perc alatt.")
+            logger.warning("ZwiftApp.exe nem indult el 6 perc alatt.")
+            print("⚠️  ZwiftApp.exe nem indult el 6 perc alatt.")
             return
 
-        # --- pywinauto automatizáció ---
-        try:
-            print("⏳ Várakozás a Zwift Launcher ablakra...")
-            # Várjuk a launcher ablakot (max 60s)
-            app = WinAutoApp(backend="uia").connect(
-                title_re="Zwift.*", timeout=60
-            )
-            window = app.top_window()
-            logger.info("Zwift Launcher ablak megtalálva.")
+        # --- pywinauto automatizáció retry loop-pal ---
+        # A launcher frissítés közben bezárhatja és újranyithatja az ablakot,
+        # ezért retry loop-ot használunk ahelyett, hogy egyetlen connect + wait-re
+        # támaszkodnánk.
+        max_attempts = 10
+        attempt_interval = 30  # másodperc próbálkozások között
+        button_clicked = False
 
-            # "Let's Go" gomb keresése és kattintás
-            # A gomb megjelenhet késve ha a launcher frissít
-            print("⏳ Várakozás a 'Let's Go' gombra (frissítés esetén ez eltarthat)...")
-            button = window.child_window(title="Let's Go", control_type="Button")
-            button.wait("visible", timeout=300)  # max 5 perc frissítésre
-            logger.info("'Let's Go' gomb megtalálva, kattintás...")
-            button.click()
-            print("✅ 'Let's Go' gomb megnyomva, várakozás a Zwift indulására...")
-
-        except Exception as exc:
-            logger.warning(
-                f"Zwift Launcher UI automatizáció sikertelen: {exc}. "
-                f"Kattints manuálisan a 'Let's Go' gombra."
-            )
-            print(f"⚠️  Launcher automatizáció sikertelen: {exc}")
-            print("    Kattints manuálisan a 'Let's Go' gombra!")
-
-        # Várakozás a ZwiftApp.exe megjelenésére (akár manuális, akár auto kattintás után)
-        print("⏳ Várakozás a ZwiftApp.exe indulására...")
-        for _ in range(120):  # max 4 perc
-            time.sleep(2)
+        for attempt in range(1, max_attempts + 1):
+            # Ha közben elindult a ZwiftApp.exe (pl. már be volt jelentkezve)
             if self._is_process_running("ZwiftApp.exe"):
-                logger.info("ZwiftApp.exe sikeresen elindult.")
+                logger.info("ZwiftApp.exe elindult (frissítés/auto-login után).")
                 print("✅ ZwiftApp.exe elindult!")
                 return
-        logger.warning("ZwiftApp.exe nem indult el 4 perc alatt.")
-        print("⚠️  ZwiftApp.exe nem indult el 4 perc alatt.")
+
+            # Ellenőrizzük, hogy a launcher process még fut-e
+            if not self._is_process_running("ZwiftLauncher.exe"):
+                logger.info(
+                    f"ZwiftLauncher.exe nem fut (próba {attempt}/{max_attempts}). "
+                    f"Lehet hogy újraindul frissítés után..."
+                )
+                if attempt < max_attempts:
+                    time.sleep(attempt_interval)
+                    continue
+                else:
+                    logger.warning("ZwiftLauncher.exe nem indult újra.")
+                    break
+
+            try:
+                print(
+                    f"⏳ Zwift Launcher ablak keresése "
+                    f"(próba {attempt}/{max_attempts})..."
+                )
+                app = WinAutoApp(backend="uia").connect(
+                    title_re="Zwift.*", timeout=30
+                )
+                window = app.top_window()
+                logger.info("Zwift Launcher ablak megtalálva.")
+
+                # "Let's Go" gomb keresése
+                print("⏳ Várakozás a 'Let's Go' gombra (frissítés esetén ez eltarthat)...")
+                button = window.child_window(
+                    title="Let's Go", control_type="Button"
+                )
+                button.wait("visible", timeout=attempt_interval)
+                logger.info("'Let's Go' gomb megtalálva, kattintás...")
+                button.click()
+                button_clicked = True
+                print("✅ 'Let's Go' gomb megnyomva, várakozás a Zwift indulására...")
+                break
+
+            except Exception as exc:
+                logger.info(
+                    f"Launcher ablak/gomb nem elérhető (próba {attempt}/{max_attempts}): "
+                    f"{exc}"
+                )
+                if attempt < max_attempts:
+                    print(
+                        f"⏳ Újrapróbálkozás {attempt_interval}s múlva "
+                        f"({attempt}/{max_attempts})..."
+                    )
+                    time.sleep(attempt_interval)
+                else:
+                    logger.warning(
+                        f"Zwift Launcher UI automatizáció sikertelen {max_attempts} "
+                        f"próba után: {exc}"
+                    )
+                    print(f"⚠️  Launcher automatizáció sikertelen: {exc}")
+                    print("    Kattints manuálisan a 'Let's Go' gombra!")
+
+        # Várakozás a ZwiftApp.exe megjelenésére (akár manuális, akár auto kattintás után)
+        if not self._is_process_running("ZwiftApp.exe"):
+            print("⏳ Várakozás a ZwiftApp.exe indulására...")
+            for _ in range(120):  # max 4 perc
+                time.sleep(2)
+                if self._is_process_running("ZwiftApp.exe"):
+                    logger.info("ZwiftApp.exe sikeresen elindult.")
+                    print("✅ ZwiftApp.exe elindult!")
+                    return
+            logger.warning("ZwiftApp.exe nem indult el 4 perc alatt.")
+            print("⚠️  ZwiftApp.exe nem indult el 4 perc alatt.")
 
     def _start_zwift_subprocess(self, script_name: str) -> None:
         """Elindít egy Zwift subprocess-t (zwift_api_polling).
@@ -3452,6 +3496,9 @@ class FanController:
             else {"resting": 60, "z1_max": 130, "z2_max": 148}
         )
 
+        # --- Zwift alkalmazás automatikus indítása (bármilyen adatforrás esetén) ---
+        self._ensure_zwift_running()
+
         # --- Komponensek létrehozása ---
         raw_power_queue: asyncio.Queue[float] = asyncio.Queue(maxsize=100)
         raw_hr_queue: asyncio.Queue[float] = asyncio.Queue(maxsize=100)
@@ -3537,9 +3584,6 @@ class FanController:
             hr_source == DataSource.ZWIFTUDP and hr_enabled
         )
         if needs_zwift:
-            # Zwift alkalmazás automatikus indítása (ha szükséges)
-            self._ensure_zwift_running()
-
             # Zwift API polling subprocess indítása
             self._start_zwift_subprocess("zwift_api_polling")
 
